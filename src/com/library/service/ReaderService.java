@@ -2,7 +2,6 @@ package com.library.service;
 
 import com.library.model.*;
 import com.library.repository.ReaderRepository;
-import com.library.utils.ValidationUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,11 +44,11 @@ public class ReaderService {
      */
     public void addReader(Reader reader) throws IOException {
         // Kiểm tra dữ liệu đầu vào
-        if (ValidationUtils.isEmpty(reader.getUserId()))
+        if (isEmpty(reader.getUserId()))
             throw new IllegalArgumentException("Mã bạn đọc không được để trống.");
-        if (ValidationUtils.isEmpty(reader.getFullName()))
+        if (isEmpty(reader.getFullName()))
             throw new IllegalArgumentException("Họ tên không được để trống.");
-        if (!ValidationUtils.isValidPhone(reader.getPhoneNumber()))
+        if (!isValidPhone(reader.getPhoneNumber()))
             throw new IllegalArgumentException("Số điện thoại không hợp lệ: " + reader.getPhoneNumber());
         if (findById(reader.getUserId()) != null)
             throw new IllegalArgumentException("Mã bạn đọc đã tồn tại: " + reader.getUserId());
@@ -73,11 +72,11 @@ public class ReaderService {
         if (r == null)
             throw new IllegalArgumentException("Không tìm thấy bạn đọc với mã: " + readerId);
 
-        if (!ValidationUtils.isEmpty(newName)) {
+        if (!isEmpty(newName)) {
             r.setFullName(newName);
         }
-        if (!ValidationUtils.isEmpty(newPhone)) {
-            if (!ValidationUtils.isValidPhone(newPhone))
+        if (!isEmpty(newPhone)) {
+            if (!isValidPhone(newPhone))
                 throw new IllegalArgumentException("Số điện thoại không hợp lệ: " + newPhone);
             r.setPhoneNumber(newPhone);
         }
@@ -111,7 +110,7 @@ public class ReaderService {
      * @return Reader nếu tìm thấy, null nếu không
      */
     public Reader findById(String readerId) {
-        if (ValidationUtils.isEmpty(readerId)) return null;
+        if (isEmpty(readerId)) return null;
         for (Reader r : readerList) {
             if (r.getUserId().equalsIgnoreCase(readerId.trim())) {
                 return r;
@@ -127,7 +126,7 @@ public class ReaderService {
      */
     public List<Reader> findByName(String keyword) {
         List<Reader> result = new ArrayList<>();
-        if (ValidationUtils.isEmpty(keyword)) return result;
+        if (isEmpty(keyword)) return result;
 
         String lowerKeyword = keyword.trim().toLowerCase();
         for (Reader r : readerList) {
@@ -162,6 +161,19 @@ public class ReaderService {
      */
     public List<Reader> getAllReaders() {
         return new ArrayList<>(readerList);
+    }
+
+    // ─── Helper nội bộ (tự validate, không phụ thuộc TV3) ─────────────────────
+
+    /** Kiểm tra chuỗi rỗng hoặc null */
+    private boolean isEmpty(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    /** Kiểm tra số điện thoại Việt Nam hợp lệ (10 số, đầu 03/05/07/08/09) */
+    private boolean isValidPhone(String phone) {
+        if (isEmpty(phone)) return false;
+        return phone.trim().matches("^(03|05|07|08|09)\\d{8}$");
     }
 
     // ─── Hiển thị ─────────────────────────────────────────────────────────────
