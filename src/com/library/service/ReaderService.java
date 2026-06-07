@@ -1,4 +1,15 @@
-package com.library.service;
+package com.library.model;
 
-public class ReaderService {
+import com.library.service.policy.FinePolicy;
+
+public abstract class Reader extends User {
+
+    protected String phone;
+
+    public Reader(String id, String name, String phone) {
+        super(id, name);
+        this.phone = phone;
+    }
+
+    public abstract FinePolicy getFinePolicy();
 }

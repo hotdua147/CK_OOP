@@ -1,4 +1,5 @@
-package com.library.service;
+package com.library.service.policy;
 
-public class BookService {
+public interface FinePolicy {
+    double calculateFine(int overdueDays);
 }
