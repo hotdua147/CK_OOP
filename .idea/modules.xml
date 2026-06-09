@@ -2,7 +2,12 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+<<<<<<< HEAD
       <module fileurl="file://$PROJECT_DIR$/HeThongQuanLyThuVien.iml" filepath="$PROJECT_DIR$/HeThongQuanLyThuVien.iml" />
+=======
+      <module fileurl="file://$PROJECT_DIR$/CK_OOP.iml" filepath="$PROJECT_DIR$/CK_OOP.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/data.iml" filepath="$PROJECT_DIR$/data/data.iml" />
+>>>>>>> c52ec3a11218e00d33ea9449d4f4b7e3a4a8f471
     </modules>
   </component>
 </project>

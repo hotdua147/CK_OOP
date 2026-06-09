@@ -1,4 +1,4 @@
 package com.library.model;
 
-public class Book {
+public class LecturerReader {
 }
