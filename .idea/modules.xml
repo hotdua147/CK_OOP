@@ -2,8 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/CK_OOP.iml" filepath="$PROJECT_DIR$/CK_OOP.iml" />
-      <module fileurl="file://$PROJECT_DIR$/data/data.iml" filepath="$PROJECT_DIR$/data/data.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Nvl.iml" filepath="$PROJECT_DIR$/.idea/Nvl.iml" />
     </modules>
   </component>
 </project>
