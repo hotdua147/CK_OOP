@@ -1,11 +1,10 @@
 package com.library.service;
 
-public double calculateFine(Reader reader, int overdueDays) {
+import com.library.model.Reader;
 
-    if (overdueDays <= 0) {
-        return 0;
+public class BorrowReturnService {
+    public double calculateFine(Reader reader, int overdueDays) {
+        if (overdueDays <= 0) return 0.0;
+        return reader.getFinePolicy().calculateFine(overdueDays);
     }
-
-    return reader.getFinePolicy()
-            .calculateFine(overdueDays);
 }

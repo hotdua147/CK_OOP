@@ -1,11 +1,11 @@
 package com.library.service.policy;
 
 public class PriorityStudentFinePolicy implements FinePolicy {
-
-    private static final double FINE_PER_DAY = 3000;
+    private static final double FINE_PER_DAY = 3000.0;
 
     @Override
     public double calculateFine(int overdueDays) {
-        return overdueDays * FINE_PER_DAY;
+        if (overdueDays <= 0) return 0.0;
+        return (double) overdueDays * FINE_PER_DAY;
     }
 }
