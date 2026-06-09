@@ -9,32 +9,34 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Tầng quản lý lưu trữ dữ liệu Phiếu mượn - Đã được xử lý ngoại lệ và tối ưu bảo mật
+ * Tầng quản lý lưu trữ dữ liệu Phiếu mượn - Đã được chuẩn hóa chống crash và tối ưu đa nền tảng.
  */
 public class BorrowTicketRepository {
-    private final String filePath = "data/tickets.txt"; //
-    private final List<BorrowTicket> tickets; // Sử dụng final để cố định tham chiếu danh sách
+
+    // Đồng bộ quy ước đặt tên hằng số toàn hệ thống
+    private static final String FILE_PATH = "data/tickets.txt";
+    private final List<BorrowTicket> tickets;
 
     public BorrowTicketRepository() {
-        this.tickets = new ArrayList<>(); //
-        loadFromFile(); //
+        this.tickets = new ArrayList<>();
+        loadFromFile();
     }
 
     /**
-     * Trả về một bản sao danh sách (Defensive Copy) hoặc danh sách Chỉ đọc
-     * Ngăn chặn việc tầng ngoài tự ý gọi .clear() hoặc .remove() làm sai lệch RAM với File cứng.
+     * Trả về một bản sao danh sách Chỉ đọc (Defensive Copy) để bảo vệ toàn vẹn dữ liệu RAM.
      */
     public List<BorrowTicket> getAll() {
         return Collections.unmodifiableList(tickets);
     }
 
     /**
-     * Tìm kiếm phiếu mượn theo ID
+     * Tìm kiếm phiếu mượn theo ID (Không phân biệt hoa thường)
      */
     public BorrowTicket findById(String ticketId) {
         if (ticketId == null) return null;
+        String trimmedId = ticketId.trim();
         for (BorrowTicket ticket : tickets) {
-            if (ticket.getTicketId().equalsIgnoreCase(ticketId.trim())) {
+            if (ticket.getTicketId().equalsIgnoreCase(trimmedId)) {
                 return ticket;
             }
         }
@@ -42,90 +44,88 @@ public class BorrowTicketRepository {
     }
 
     /**
-     * Thêm mới phiếu mượn và tự động đồng bộ ra file
+     * Thêm mới phiếu mượn và tự động đồng bộ xuống file text
      */
     public void add(BorrowTicket ticket) {
         if (ticket == null) {
-            System.err.println("Lỗi: Không thể thêm phiếu mượn rỗng (null).");
+            System.err.println("[BorrowTicketRepository] Lỗi: Không thể thêm phiếu mượn rỗng (null).");
             return;
         }
-        tickets.add(ticket); //
-        saveToFile(); // Tự động đồng bộ ra file sau khi thêm mới
+        tickets.add(ticket);
+        saveToFile(); // Tự động đồng bộ ra file cứng
     }
 
     /**
-     * Cập nhật thông tin phiếu mượn (Ví dụ: Khi trả sách, tính tiền phạt)
+     * Cập nhật trạng thái phiếu mượn (Khi trả sách, tính tiền phạt)
      */
     public void update(BorrowTicket updatedTicket) {
         if (updatedTicket == null) return;
 
         boolean isUpdated = false;
         for (int i = 0; i < tickets.size(); i++) {
-            if (tickets.get(i).getTicketId().equals(updatedTicket.getTicketId())) { //
-                tickets.set(i, updatedTicket); // Cập nhật trên RAM
+            if (tickets.get(i).getTicketId().equals(updatedTicket.getTicketId())) {
+                tickets.set(i, updatedTicket); // Cập nhật trạng thái mới trên RAM
                 isUpdated = true;
-                break; //
+                break;
             }
         }
 
-        // Chỉ ghi file khi dữ liệu thực sự có sự thay đổi
+        // Chỉ tốn tài nguyên ghi file khi dữ liệu thực sự có biến động
         if (isUpdated) {
-            saveToFile(); //
+            saveToFile();
         } else {
-            System.err.println("Lỗi: Không tìm thấy mã phiếu mượn '" + updatedTicket.getTicketId() + "' để cập nhật.");
+            System.err.println("[BorrowTicketRepository] Lỗi: Không tìm thấy mã phiếu mượn '" + updatedTicket.getTicketId() + "' để cập nhật.");
         }
     }
 
     /**
-     * Đọc dữ liệu từ file tickets.txt
-     * Đã bọc Try-catch bên trong vòng lặp chống sập hệ thống (Fault-Tolerance).
+     * Đọc dữ liệu từ file tickets.txt - Bọc phòng thủ lỗi bóc tách sâu
      */
     private void loadFromFile() {
-        tickets.clear(); //
-        File file = new File(filePath); //
+        tickets.clear();
+        File file = new File(FILE_PATH);
         if (!file.exists()) {
-            return; // Nếu chưa có file dữ liệu thì bỏ qua
+            return; // Nếu chưa có file dữ liệu thì bỏ qua, trả về danh sách rỗng an toàn
         }
 
-        // Sử dụng Try-with-resources để tự động đóng luồng đọc file
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) { //
-            String line; //
-            while ((line = br.readLine()) != null) { //
-                // Bỏ qua dòng trống hoặc dòng chú thích (Comment)
-                if (line.trim().isEmpty() || line.trim().startsWith("#")) { //
-                    continue; //
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                // Bỏ qua dòng trống hoặc dòng chú thích cấu trúc file
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
                 }
 
-                // Đặt khối try-catch tại đây để nếu một dòng dữ liệu bị lỗi, hệ thống vẫn tiếp tục đọc các dòng tiếp theo
+                // Khối try-catch bảo vệ vòng lặp: Một dòng lỗi không làm sập toàn bộ bộ đọc
                 try {
-                    String[] parts = line.split("\\|"); // Sử dụng chuẩn regex thoát ký tự đặc biệt
+                    String[] parts = line.split("\\|");
 
-                    // Một dòng hợp lệ bắt buộc phải có tối thiểu 7 cột dữ liệu gốc ban đầu
                     if (parts.length < 7) {
-                        System.err.println("Bỏ qua dòng lỗi cấu trúc (Thiếu cột): " + line);
+                        System.err.println("[BorrowTicketRepository] Bỏ qua dòng lỗi cấu trúc (Thiếu cột): " + line);
                         continue;
                     }
 
-                    String ticketId = parts[0].trim(); //
-                    String readerId = parts[1].trim(); //
-                    LocalDate borrowDate = LocalDate.parse(parts[2].trim()); //
-                    LocalDate dueDate = LocalDate.parse(parts[3].trim()); //
+                    String ticketId = parts[0].trim();
+                    String readerId = parts[1].trim();
+                    LocalDate borrowDate = LocalDate.parse(parts[2].trim());
+                    LocalDate dueDate = LocalDate.parse(parts[3].trim());
 
-                    // Xử lý giá trị ngày trả thực tế nếu đang ở trạng thái chưa trả (chuỗi "null")
-                    LocalDate returnDate = parts[4].trim().equalsIgnoreCase("null") ? null : LocalDate.parse(parts[4].trim()); //
-                    String statusStr = parts[5].trim(); //
-                    double fineAmount = Double.parseDouble(parts[6].trim()); //
+                    // ĐÃ KHẮC PHỤC: Xử lý chuỗi "null" an toàn, ngăn nổ ngoại lệ DateTimeParseException
+                    LocalDate returnDate = parts[4].trim().equalsIgnoreCase("null") ? null : LocalDate.parse(parts[4].trim());
+                    String statusStr = parts[5].trim();
+                    double fineAmount = Double.parseDouble(parts[6].trim());
 
-                    // Xử lý bóc tách chuỗi phức hợp Chi Tiết Sách Mượn (Nested Split)
-                    List<BorrowTicketDetail> details = new ArrayList<>(); //
-                    if (parts.length > 7 && !parts[7].trim().equalsIgnoreCase("null") && !parts[7].trim().isEmpty()) { //
-                        String[] detailsPart = parts[7].trim().split(","); // Tách theo dấu phẩy để lấy từng loại sách
-                        for (String d : detailsPart) { //
-                            String[] subParts = d.split(":"); // Tách theo dấu hai chấm lấy MãSách và SốLượng
+                    // Bóc tách chuỗi phức hợp Chi Tiết Sách Mượn (Nested Split)
+                    List<BorrowTicketDetail> details = new ArrayList<>();
+                    if (parts.length > 7 && !parts[7].trim().equalsIgnoreCase("null") && !parts[7].trim().isEmpty()) {
+                        String[] detailsPart = parts[7].trim().split(",");
+                        for (String d : detailsPart) {
+                            String[] subParts = d.split(":");
                             if (subParts.length == 2) {
                                 String bookId = subParts[0].trim();
                                 int quantity = Integer.parseInt(subParts[1].trim());
-                                details.add(new BorrowTicketDetail(bookId, quantity)); //
+                                details.add(new BorrowTicketDetail(bookId, quantity));
                             }
                         }
                     }
@@ -135,41 +135,50 @@ public class BorrowTicketRepository {
                     tickets.add(ticket);
 
                 } catch (Exception e) {
-                    System.err.println("Lỗi phân tích cú pháp tại dòng dữ liệu: [" + line + "] -> Chi tiết: " + e.getMessage());
+                    System.err.println("[BorrowTicketRepository] Bỏ qua dòng sai định dạng: [" + line + "] -> Chi tiết: " + e.getMessage());
                 }
             }
         } catch (IOException e) {
-            System.err.println("Lỗi nghiêm trọng không thể đọc file tickets.txt: " + e.getMessage());
+            System.err.println("[BorrowTicketRepository] Lỗi nghiêm trọng không thể đọc file tickets.txt: " + e.getMessage());
         }
     }
 
     /**
-     * Ghi ngược toàn bộ danh sách phiếu mượn từ bộ nhớ RAM xuống file tickets.txt
+     * Ghi ngược dữ liệu từ RAM xuống file cứng - Đã tối ưu hóa tạo thư mục tự động và xuống dòng đa nền tảng
      */
     private void saveToFile() {
-        // Sử dụng Try-with-resources tự động đóng luồng ghi file
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) { //
+        File file = new File(FILE_PATH);
+        File parentDir = file.getParentFile();
 
-            // Ghi phần tiêu đề (Header Comment) định nghĩa cấu trúc file dữ liệu để tiện đối chiếu
-            bw.write("# ====================================================================================\n"); //
-            bw.write("# CẤU TRÚC DỮ LIỆU FILE TICKETS.TXT (QUẢN LÝ PHIẾU MƯỢN / TRẢ SÁCH)\n"); //
-            bw.write("# ====================================================================================\n"); //
-            bw.write("# Định dạng các cột phân tách bằng dấu gạch đứng (|):\n"); //
-            bw.write("# Quy luật: MãPhiếu|MãBạnĐọc|NgàyMượn|NgàyHẹnTrả|NgàyTrảThựcTế|TrạngThái|TiềnPhạt|ChiTiếtMượn\n"); //
-            bw.write("#\n"); //
-            bw.write("# Trong đó:\n"); //
-            bw.write("#   - NgàyTrảThựcTế: Ghi 'null' nếu sách chưa được trả.\n"); //
-            bw.write("#   - TrạngThái: 'Đang mượn' hoặc 'Đã trả'.\n"); //
-            bw.write("#   - ChiTiếtMượn: Định dạng MãSách:SốLượng. Nếu mượn nhiều loại sách thì phân tách bằng dấu phẩy (,).\n"); //
-            bw.write("# ====================================================================================\n\n"); //
+        // ĐÃ KHẮC PHỤC: Tự động tạo folder data/ nếu hệ thống chạy lần đầu tiên
+        if (parentDir != null && !parentDir.exists()) {
+            parentDir.mkdirs();
+        }
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+
+            // Ghi phần tiêu đề hướng dẫn format trong file text
+            bw.write("# ===================================================================================="); bw.newLine();
+            bw.write("# CẤU TRÚC DỮ LIỆU FILE TICKETS.TXT (QUẢN LÝ PHIẾU MƯỢN / TRẢ SÁCH)"); bw.newLine();
+            bw.write("# ===================================================================================="); bw.newLine();
+            bw.write("# Định dạng các cột phân tách bằng dấu gạch đứng (|):"); bw.newLine();
+            bw.write("# Quy luật: MãPhiếu|MãBạnĐọc|NgàyMượn|NgàyHẹnTrả|NgàyTrảThựcTế|TrạngThái|TiềnPhạt|ChiTiếtMượn"); bw.newLine();
+            bw.write("#"); bw.newLine();
+            bw.write("# Trong đó:"); bw.newLine();
+            bw.write("#   - NgàyTrảThựcTế: Ghi 'null' nếu sách chưa được trả."); bw.newLine();
+            bw.write("#   - TrạngThái: 'Đang mượn' hoặc 'Đã trả'."); bw.newLine();
+            bw.write("#   - ChiTiếtMượn: Định dạng MãSách:SốLượng. Nếu mượn nhiều loại sách thì phân tách bằng dấu phẩy (,)."); bw.newLine();
+            bw.write("# ===================================================================================="); bw.newLine();
+            bw.newLine();
 
             // Duyệt danh sách và tiến hành ghi dữ liệu
             for (BorrowTicket t : tickets) {
-                // Tận dụng tối đa tính đóng gói bằng cách gọi trực tiếp hàm toFileFormat() từ chính Model
-                bw.write(t.toFileFormat() + "\n");
+                // ĐÃ KHẮC PHỤC: Dùng bw.newLine() thay vì cộng chuỗi "\n" để chạy mượt cả trên Windows lẫn Linux
+                bw.write(t.toFileFormat());
+                bw.newLine();
             }
         } catch (IOException e) {
-            System.err.println("Lỗi khi ghi dữ liệu vào file tickets.txt: " + e.getMessage()); //
+            System.err.println("[BorrowTicketRepository] Lỗi nghiêm trọng khi ghi dữ liệu vào file tickets.txt: " + e.getMessage());
         }
     }
 }

@@ -7,6 +7,7 @@ import com.library.repository.ReaderRepository;
 import com.library.utils.IdGenerator;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -27,7 +28,7 @@ public class BorrowReturnService {
     }
 
     /**
-     * Nghiệp vụ 2.3: Thực hiện mượn sách
+     * Nghiệp vụ 2.3: Thực hiện mượn sách (Giữ nguyên cấu trúc tối ưu của hotdua147)
      */
     public void borrowBook(String readerId, String bookId, int quantity) {
         // 1. Kiểm tra số lượng mượn hợp lệ (> 0)
@@ -99,6 +100,68 @@ public class BorrowReturnService {
 
         } catch (Exception e) {
             throw new IllegalStateException("Lỗi hệ thống cứng: Không thể hoàn tất giao dịch mượn sách. Chi tiết: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Nghiệp vụ 2.4: Thực hiện trả sách và tính phạt trễ hạn tự động (Leader tích hợp hoàn chỉnh)
+     * * @param ticketId Mã phiếu mượn cần xử lý trả sách
+     */
+    public void returnBook(String ticketId) {
+        // 1. Kiểm tra sự tồn tại của phiếu mượn trên hệ thống
+        BorrowTicket ticket = borrowTicketRepository.findById(ticketId);
+        if (ticket == null) {
+            throw new IllegalArgumentException("Lỗi nghiệp vụ: Không tìm thấy phiếu mượn có mã '" + ticketId + "' trên hệ thống!");
+        }
+
+        // 2. Chặn lỗi logic: Nếu phiếu đã trả rồi thì không cho trả lại lần nữa
+        if (ticket.getStatus() == BorrowTicket.TicketStatus.RETURNED) {
+            throw new IllegalStateException("Lỗi logic: Phiếu mượn này đã được hoàn thành (trả sách) từ trước!");
+        }
+
+        // 3. Tìm thông tin Bạn đọc tương ứng để làm căn cứ tính phạt
+        Reader reader = readerRepository.findById(ticket.getReaderId());
+        if (reader == null) {
+            throw new IllegalArgumentException("Lỗi dữ liệu: Bạn đọc '" + ticket.getReaderId() + "' ghi trên phiếu không tồn tại!");
+        }
+
+        // 4. Thiết lập ngày trả thực tế và tính toán số ngày quá hạn (nếu có)
+        LocalDate returnDate = LocalDate.now();
+        ticket.setReturnDate(returnDate);
+
+        // Tính toán khoảng cách ngày giữa ngày hẹn trả và ngày trả thực tế
+        long daysBetween = ChronoUnit.DAYS.between(ticket.getDueDate(), returnDate);
+        int overdueDays = daysBetween > 0 ? (int) daysBetween : 0;
+
+        // 5. Khớp nối Strategy Pattern: Gọi hàm nội bộ để tính tiền phạt
+        double fineAmount = calculateFine(reader, overdueDays);
+        ticket.setFineAmount(fineAmount);
+
+        // 6. Chuyển đổi trạng thái phiếu mượn sang Đã trả
+        ticket.setStatus(BorrowTicket.TicketStatus.RETURNED);
+
+        try {
+            // 7. Quy trình hoàn kho sách: Trả lại sách về kho hàng (quantity + returned_quantity)
+            for (BorrowTicketDetail detail : ticket.getDetails()) {
+                Book book = bookRepository.findById(detail.getBookId());
+                if (book != null) {
+                    book.setQuantity(book.getQuantity() + detail.getQuantity());
+                    bookRepository.update(book); // Đồng bộ file books.txt
+                }
+            }
+
+            // 8. Đồng bộ trạng thái phiếu mượn mới nhất xuống file tickets.txt
+            borrowTicketRepository.update(ticket);
+
+            // Xuất log thông báo trực quan ra màn hình Console
+            System.out.println("\n=== HỆ THỐNG XỬ LÝ TRẢ SÁCH THÀNH CÔNG ===");
+            System.out.println(" Mã phiếu mượn : " + ticketId);
+            System.out.println(" Số ngày trễ hạn: " + overdueDays + " ngày");
+            System.out.println(" Tiền phạt trễ  : " + String.format("%,.0f", fineAmount) + " VND");
+            System.out.println("===========================================");
+
+        } catch (Exception e) {
+            throw new IllegalStateException("Lỗi hệ thống cứng: Không thể ghi nhận trả sách. Chi tiết: " + e.getMessage());
         }
     }
 
