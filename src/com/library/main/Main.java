@@ -9,23 +9,15 @@ import java.util.Scanner;
 
 /**
  * Lớp khởi chạy hệ thống (Giao diện CLI Console)
- * Đã được tích hợp cơ chế bắt lỗi tập trung và điều hướng luồng nghiệp vụ an toàn.
+ * Đã tích hợp hoàn chỉnh luồng nghiệp vụ Mượn sách, Trả sách và cơ chế bắt lỗi tập trung an toàn.
  */
 public class Main {
-<<<<<<< HEAD
-    public static void main(String[] args) {
-        System.out.println("[TEMP MAIN] App started");
-        // TODO: Gọi thử các class/hàm bạn muốn kiểm tra ở đây.
-        // Ví dụ: new SomeService().someMethod();
-    }
-}
-=======
-    // Khởi tạo các tầng quản lý dữ liệu và nghiệp vụ
+    // Khởi tạo tập trung các tầng quản lý dữ liệu (Nạp dữ liệu từ file text lên RAM)
     private static final BorrowTicketRepository borrowTicketRepository = new BorrowTicketRepository();
-    private static final BookRepository bookRepository = new BookRepository(); // Giả định class đã sẵn sàng
-    private static final ReaderRepository readerRepository = new ReaderRepository(); // Giả định class đã sẵn sàng
+    private static final BookRepository bookRepository = new BookRepository();
+    private static final ReaderRepository readerRepository = new ReaderRepository();
 
-    // Tiêm các repository vào tầng service xử lý nghiệp vụ
+    // Tiêm (Inject) các repository vào tầng service xử lý nghiệp vụ lõi
     private static final BorrowReturnService borrowReturnService = new BorrowReturnService(
             borrowTicketRepository, bookRepository, readerRepository
     );
@@ -48,8 +40,8 @@ public class Main {
                     handleBorrowBook(scanner);
                     break;
                 case "2":
-                    System.out.println("\n[Tính năng] Nghiệp vụ Trả sách & Tính phí phạt đang phát triển...");
-                    // Sẽ gọi sang borrowReturnService.returnBook(...) sau khi cấu hình Policy
+                    // ĐÃ KÍCH HOẠT: Khớp nối luồng xử lý Trả sách & Tính tiền phạt từ nhánh manh_dat
+                    handleReturnBook(scanner);
                     break;
                 case "3":
                     handleShowAllTickets();
@@ -85,7 +77,7 @@ public class Main {
     }
 
     /**
-     * Điều khiển luồng nhập liệu cho nghiệp vụ Mượn sách
+     * Điều khiển luồng nhập liệu cho nghiệp vụ Mượn sách (Tối ưu từ hotdua147)
      */
     private static void handleBorrowBook(Scanner scanner) {
         System.out.println("\n>>> THỰC HIỆN NGHIỆP VỤ MƯỢN SÁCH <<<");
@@ -101,7 +93,6 @@ public class Main {
 
         // Khối xử lý ngoại lệ tập trung: Đảm bảo dữ liệu nhập sai không làm sập phần mềm
         try {
-            // Kiểm tra định dạng số lượng nhập vào
             int quantity;
             try {
                 quantity = Integer.parseInt(quantityStr);
@@ -110,16 +101,41 @@ public class Main {
             }
 
             // Gọi xuống tầng Service để thực thi xử lý nghiệp vụ cốt lõi
-            borrowReturnService.borrowBook(readerId, bookId, quantity); //
+            borrowReturnService.borrowBook(readerId, bookId, quantity);
 
         } catch (IllegalArgumentException e) {
-            // Bắt các lỗi do người dùng nhập sai thông tin đầu vào (Mã trống, số lượng <= 0, mã không tồn tại)
             System.err.println("\n[LỖI NHẬP LIỆU] " + e.getMessage());
         } catch (IllegalStateException e) {
-            // Bắt các lỗi do vi phạm trạng thái hệ thống (Hết hàng trong kho, vượt quá hạn mức mượn)
             System.err.println("\n[VI PHẠM QUY ĐỊNH] " + e.getMessage());
         } catch (Exception e) {
-            // Phòng thủ các lỗi hệ thống không lường trước được (Lỗi phân rã file, tràn bộ nhớ...)
+            System.err.println("\n[LỖI HỆ THỐNG NGOÀI Ý MUỐN] " + e.getMessage());
+        }
+    }
+
+    /**
+     * Điều khiển luồng nhập liệu cho nghiệp vụ Trả sách & Tính phạt (Leader tích hợp đồng bộ)
+     */
+    private static void handleReturnBook(Scanner scanner) {
+        System.out.println("\n>>> THỰC HIỆN NGHIỆP VỤ TRẢ SÁCH & TÍNH PHẠT <<<");
+
+        System.out.print("Nhập mã phiếu mượn cần trả (ví dụ: PT001): ");
+        String ticketId = scanner.nextLine().trim();
+
+        if (ticketId.isEmpty()) {
+            System.err.println("\n[LỖI NHẬP LIỆU] Mã phiếu mượn không được để trống!");
+            return;
+        }
+
+        // Áp dụng cơ chế bắt lỗi tập trung đồng bộ với luồng Mượn sách
+        try {
+            // Gọi xuống tầng Service tìm phiếu mượn cũ, cập nhật ngày trả thực tế, tính phạt Strategy và hoàn kho
+            borrowReturnService.returnBook(ticketId);
+
+        } catch (IllegalArgumentException e) {
+            System.err.println("\n[LỖI NHẬP LIỆU] " + e.getMessage());
+        } catch (IllegalStateException e) {
+            System.err.println("\n[VI PHẠM QUY ĐỊNH] " + e.getMessage());
+        } catch (Exception e) {
             System.err.println("\n[LỖI HỆ THỐNG NGOÀI Ý MUỐN] " + e.getMessage());
         }
     }
@@ -141,7 +157,6 @@ public class Main {
         System.out.println("--------------------------------------------------------------------------------------------------------------------");
 
         for (var t : tickets) {
-            // Xử lý chuỗi hiển thị danh sách sách chi tiết
             StringBuilder booksStr = new StringBuilder();
             for (int i = 0; i < t.getDetails().size(); i++) {
                 booksStr.append(t.getDetails().get(i).toString());
@@ -161,4 +176,3 @@ public class Main {
         }
     }
 }
->>>>>>> origin/hotdua147
