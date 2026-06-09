@@ -2,8 +2,8 @@ package com.library.model;
 
 /**
  * Sinh viên ưu tiên.
- *  - Mượn tối đa : 5 cuốn
- *  - Phí phạt     : 3.000đ / ngày trễ
+ * - Mượn tối đa : 5 cuốn
+ * - Phí phạt     : 3.000đ / ngày trễ
  */
 public class PriorityStudentReader extends Reader {
 

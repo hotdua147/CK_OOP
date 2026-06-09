@@ -2,8 +2,8 @@ package com.library.model;
 
 /**
  * Sinh viên thường.
- *  - Mượn tối đa : 3 cuốn
- *  - Phí phạt     : 5.000đ / ngày trễ
+ * - Mượn tối đa : 3 cuốn
+ * - Phí phạt     : 5.000đ / ngày trễ
  */
 public class StudentReader extends Reader {
 

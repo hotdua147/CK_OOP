@@ -2,6 +2,7 @@ package com.library.service;
 
 import com.library.model.*;
 import com.library.repository.ReaderRepository;
+import com.library.utils.ValidationUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,10 +12,10 @@ import java.util.List;
  * Xử lý toàn bộ logic nghiệp vụ liên quan đến Bạn đọc.
  *
  * Chức năng:
- *  - Thêm / sửa / xóa bạn đọc
- *  - Tìm kiếm theo mã, theo tên
- *  - Hiển thị danh sách
- *  - Kiểm tra giới hạn mượn sách (dùng bởi BorrowReturnService của Trưởng nhóm)
+ * - Thêm / sửa / xóa bạn đọc
+ * - Tìm kiếm theo mã, theo tên
+ * - Hiển thị danh sách
+ * - Kiểm tra giới hạn mượn sách (dùng bởi BorrowReturnService)
  */
 public class ReaderService {
 
@@ -39,16 +40,16 @@ public class ReaderService {
      * Thêm một bạn đọc mới vào hệ thống.
      *
      * @param reader đối tượng Reader cần thêm
-     * @throws IOException          nếu ghi file thất bại
+     * @throws IOException              nếu ghi file thất bại
      * @throws IllegalArgumentException nếu dữ liệu không hợp lệ
      */
     public void addReader(Reader reader) throws IOException {
-        // Kiểm tra dữ liệu đầu vào
-        if (isEmpty(reader.getUserId()))
+        // Kiểm tra dữ liệu đầu vào thông qua utils
+        if (ValidationUtils.isEmpty(reader.getUserId()))
             throw new IllegalArgumentException("Mã bạn đọc không được để trống.");
-        if (isEmpty(reader.getFullName()))
+        if (ValidationUtils.isEmpty(reader.getFullName()))
             throw new IllegalArgumentException("Họ tên không được để trống.");
-        if (!isValidPhone(reader.getPhoneNumber()))
+        if (!ValidationUtils.isValidPhone(reader.getPhoneNumber()))
             throw new IllegalArgumentException("Số điện thoại không hợp lệ: " + reader.getPhoneNumber());
         if (findById(reader.getUserId()) != null)
             throw new IllegalArgumentException("Mã bạn đọc đã tồn tại: " + reader.getUserId());
@@ -72,11 +73,11 @@ public class ReaderService {
         if (r == null)
             throw new IllegalArgumentException("Không tìm thấy bạn đọc với mã: " + readerId);
 
-        if (!isEmpty(newName)) {
+        if (!ValidationUtils.isEmpty(newName)) {
             r.setFullName(newName);
         }
-        if (!isEmpty(newPhone)) {
-            if (!isValidPhone(newPhone))
+        if (!ValidationUtils.isEmpty(newPhone)) {
+            if (!ValidationUtils.isValidPhone(newPhone))
                 throw new IllegalArgumentException("Số điện thoại không hợp lệ: " + newPhone);
             r.setPhoneNumber(newPhone);
         }
@@ -110,7 +111,7 @@ public class ReaderService {
      * @return Reader nếu tìm thấy, null nếu không
      */
     public Reader findById(String readerId) {
-        if (isEmpty(readerId)) return null;
+        if (ValidationUtils.isEmpty(readerId)) return null;
         for (Reader r : readerList) {
             if (r.getUserId().equalsIgnoreCase(readerId.trim())) {
                 return r;
@@ -126,7 +127,7 @@ public class ReaderService {
      */
     public List<Reader> findByName(String keyword) {
         List<Reader> result = new ArrayList<>();
-        if (isEmpty(keyword)) return result;
+        if (ValidationUtils.isEmpty(keyword)) return result;
 
         String lowerKeyword = keyword.trim().toLowerCase();
         for (Reader r : readerList) {
@@ -163,19 +164,6 @@ public class ReaderService {
         return new ArrayList<>(readerList);
     }
 
-    // ─── Helper nội bộ (tự validate, không phụ thuộc TV3) ─────────────────────
-
-    /** Kiểm tra chuỗi rỗng hoặc null */
-    private boolean isEmpty(String s) {
-        return s == null || s.trim().isEmpty();
-    }
-
-    /** Kiểm tra số điện thoại Việt Nam hợp lệ (10 số, đầu 03/05/07/08/09) */
-    private boolean isValidPhone(String phone) {
-        if (isEmpty(phone)) return false;
-        return phone.trim().matches("^(03|05|07|08|09)\\d{8}$");
-    }
-
     // ─── Hiển thị ─────────────────────────────────────────────────────────────
 
     /**
@@ -187,7 +175,7 @@ public class ReaderService {
             return;
         }
         System.out.println("\n╔══════════════════════════════════════════════════════════════════════════╗");
-        System.out.println("║                       DANH SÁCH BẠN ĐỌC                                ║");
+        System.out.println("║                       DANH SÁCH BẠN ĐỌC                                  ║");
         System.out.println("╚══════════════════════════════════════════════════════════════════════════╝");
         System.out.printf("%-10s %-25s %-13s %-22s %-12s%n",
                 "Mã BD", "Họ tên", "SĐT", "Loại bạn đọc", "Mượn tối đa");

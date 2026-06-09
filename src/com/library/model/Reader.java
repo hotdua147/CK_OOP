@@ -4,9 +4,9 @@ package com.library.model;
  * Lớp trừu tượng đại diện cho Bạn đọc thư viện, kế thừa từ User.
  *
  * Áp dụng:
- *  - Inheritance : kế thừa từ User
- *  - Abstraction : định nghĩa các phương thức trừu tượng
- *  - Polymorphism: lớp con override getMaxBorrowLimit(), getReaderType(), getFinePerDay()
+ * - Inheritance : kế thừa từ User
+ * - Abstraction : định nghĩa các phương thức trừu tượng
+ * - Polymorphism: lớp con override getMaxBorrowLimit(), getReaderType(), getFinePerDay()
  */
 public abstract class Reader extends User {
 

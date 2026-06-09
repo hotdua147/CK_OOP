@@ -2,8 +2,8 @@ package com.library.model;
 
 /**
  * Giảng viên.
- *  - Mượn tối đa : 10 cuốn
- *  - Phí phạt     : 2.000đ / ngày trễ
+ * - Mượn tối đa : 10 cuốn
+ * - Phí phạt     : 2.000đ / ngày trễ
  */
 public class LecturerReader extends Reader {
 

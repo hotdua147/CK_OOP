@@ -1,7 +1,6 @@
 package com.library.repository;
 
 import com.library.model.*;
-
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,12 +9,7 @@ import java.util.List;
  * Xử lý đọc / ghi danh sách bạn đọc từ file (File IO).
  *
  * Định dạng mỗi dòng trong readers.txt:
- *   readerId|fullName|phoneNumber|readerType
- *
- * Ví dụ:
- *   BD001|Nguyen Van An|0901234567|STUDENT
- *   BD002|Tran Thi Bich|0912345678|PRIORITY_STUDENT
- *   BD003|Le Van Cuong|0923456789|LECTURER
+ * readerId|fullName|phoneNumber|readerType
  */
 public class ReaderRepository {
 
@@ -91,9 +85,6 @@ public class ReaderRepository {
 
     /**
      * Phân tích một dòng text từ file thành đối tượng Reader.
-     *
-     * @param line một dòng trong file
-     * @return Reader tương ứng, hoặc null nếu dòng không hợp lệ
      */
     private Reader parseLine(String line) {
         String[] parts = line.split("\\|");
@@ -124,9 +115,9 @@ public class ReaderRepository {
      */
     private String toLine(Reader r) {
         String type;
-        if (r instanceof LecturerReader)         type = TYPE_LECTURER;
+        if (r instanceof LecturerReader)             type = TYPE_LECTURER;
         else if (r instanceof PriorityStudentReader) type = TYPE_PRIORITY_STUDENT;
-        else                                     type = TYPE_STUDENT;
+        else                                         type = TYPE_STUDENT;
 
         return r.getUserId() + "|" + r.getFullName() + "|" + r.getPhoneNumber() + "|" + type;
     }
