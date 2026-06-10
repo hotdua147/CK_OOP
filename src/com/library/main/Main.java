@@ -22,6 +22,7 @@ public class Main {
             borrowTicketRepository, bookRepository, readerRepository
     );
 
+
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         boolean isRunning = true;

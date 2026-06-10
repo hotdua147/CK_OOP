@@ -1,5 +1,5 @@
 package com.library.service.policy;
-
+import com.library.policy.FinePolicy;
 public class PriorityStudentFinePolicy implements FinePolicy {
     private static final double FINE_PER_DAY = 3000.0;
 

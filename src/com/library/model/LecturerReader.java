@@ -1,5 +1,7 @@
 package com.library.model;
 
+import com.library.service.policy.LecturerFinePolicy; // ÉP BUỘC: Import chính xác chiến lược tính phạt của Giảng viên
+
 /**
  * Giảng viên.
  * - Mượn tối đa : 10 cuốn
@@ -14,7 +16,8 @@ public class LecturerReader extends Reader {
     // ─── Constructor ───────────────────────────────────────────────────────────
 
     public LecturerReader(String userId, String fullName, String phoneNumber) {
-        super(userId, fullName, phoneNumber);
+        // ĐÃ ĐỒNG BỘ: Truyền đủ 4 tham số sang lớp cha Reader, tự động tiêm chính sách tính phạt riêng của Giảng viên
+        super(userId, fullName, phoneNumber, new LecturerFinePolicy());
     }
 
     // ─── Override abstract methods ─────────────────────────────────────────────

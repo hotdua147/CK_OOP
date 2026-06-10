@@ -1,5 +1,7 @@
 package com.library.model;
 
+import com.library.service.policy.NormalStudentFinePolicy; // ÉP BUỘC: Import chiến lược tính phạt tương ứng của sinh viên
+
 /**
  * Sinh viên thường.
  * - Mượn tối đa : 3 cuốn
@@ -14,7 +16,8 @@ public class StudentReader extends Reader {
     // ─── Constructor ───────────────────────────────────────────────────────────
 
     public StudentReader(String userId, String fullName, String phoneNumber) {
-        super(userId, fullName, phoneNumber);
+        // ĐÃ ĐỒNG BỘ: Truyền đủ 4 tham số sang lớp cha Reader, tự động tiêm chính sách tính phạt trễ hạn
+        super(userId, fullName, phoneNumber, new NormalStudentFinePolicy());
     }
 
     // ─── Override abstract methods ─────────────────────────────────────────────
