@@ -4,8 +4,8 @@ package com.library.utils;
  * Các hàm tiện ích kiểm tra tính hợp lệ của dữ liệu đầu vào.
  *
  * Chức năng:
- *  - Kiểm tra chuỗi rỗng / null
- *  - Kiểm tra số điện thoại Việt Nam hợp lệ
+ * - Kiểm tra chuỗi rỗng / null
+ * - Kiểm tra số điện thoại Việt Nam hợp lệ
  */
 public class ValidationUtils {
 

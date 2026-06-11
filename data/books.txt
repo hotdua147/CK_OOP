@@ -1,0 +1,10 @@
+# ==================================================
+# CẤU TRÚC DỮ LIỆU FILE BOOKS.TXT (QUẢN LÝ KHO SÁCH)
+# Quy luật định dạng: MãSách|TênSách|SốLượng Kho
+# ==================================================
+
+B001|Lap trinh Java can ban|15
+B002|Cau truc du lieu va Giai thuat|8
+B003|Thiet ke huong doi tuong OOP|12
+B004|Co so du lieu va SQL|5
+B005|Phan tich va Thiet ke he thong|20

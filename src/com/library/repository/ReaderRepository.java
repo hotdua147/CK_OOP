@@ -1,133 +1,75 @@
 package com.library.repository;
 
-import com.library.model.*;
-
+import com.library.model.Reader;
+import com.library.model.StudentReader;
+import com.library.model.PriorityStudentReader;
+import com.library.model.LecturerReader;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-/**
- * Xử lý đọc / ghi danh sách bạn đọc từ file (File IO).
- *
- * Định dạng mỗi dòng trong readers.txt:
- *   readerId|fullName|phoneNumber|readerType
- *
- * Ví dụ:
- *   BD001|Nguyen Van An|0901234567|STUDENT
- *   BD002|Tran Thi Bich|0912345678|PRIORITY_STUDENT
- *   BD003|Le Van Cuong|0923456789|LECTURER
- */
 public class ReaderRepository {
-
     private static final String FILE_PATH = "data/readers.txt";
+    private final List<Reader> readers = new ArrayList<>();
 
-    // Hằng số loại bạn đọc lưu trong file
-    public static final String TYPE_STUDENT          = "STUDENT";
-    public static final String TYPE_PRIORITY_STUDENT = "PRIORITY_STUDENT";
-    public static final String TYPE_LECTURER         = "LECTURER";
+    public ReaderRepository() { loadFromFile(); }
 
-    // ─── Đọc file ──────────────────────────────────────────────────────────────
+    public List<Reader> getAll() { return Collections.unmodifiableList(readers); }
 
-    /**
-     * Đọc tất cả bạn đọc từ file readers.txt.
-     * Nếu file chưa tồn tại, trả về danh sách rỗng.
-     *
-     * @return danh sách Reader
-     * @throws IOException nếu có lỗi đọc file
-     */
-    public List<Reader> readAll() throws IOException {
-        List<Reader> readers = new ArrayList<>();
-        File file = new File(FILE_PATH);
-
-        // Nếu file chưa tồn tại, trả về danh sách rỗng
-        if (!file.exists()) {
-            return readers;
+    public Reader findById(String readerId) {
+        if (readerId == null) return null;
+        for (Reader r : readers) {
+            if (r.getUserId().equalsIgnoreCase(readerId.trim())) return r;
         }
+        return null;
+    }
 
+    private void loadFromFile() {
+        readers.clear();
+        File file = new File(FILE_PATH);
+        if (!file.exists()) { initMockData(); return; }
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = br.readLine()) != null) {
-                line = line.trim();
-                // Bỏ qua dòng trống và dòng comment (#)
-                if (line.isEmpty() || line.startsWith("#")) continue;
-
-                Reader reader = parseLine(line);
-                if (reader != null) {
-                    readers.add(reader);
-                }
+                if (line.trim().isEmpty() || line.startsWith("#")) continue;
+                Reader r = parseLine(line);
+                if (r != null) readers.add(r);
             }
-        }
-        return readers;
+        } catch (IOException e) { e.printStackTrace(); }
     }
 
-    // ─── Ghi file ──────────────────────────────────────────────────────────────
-
-    /**
-     * Ghi toàn bộ danh sách bạn đọc ra file readers.txt.
-     *
-     * @param readers danh sách cần ghi
-     * @throws IOException nếu có lỗi ghi file
-     */
-    public void writeAll(List<Reader> readers) throws IOException {
-        // Tạo thư mục data/ nếu chưa có
-        File dir = new File("data");
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH))) {
-            bw.write("# Format: readerId|fullName|phoneNumber|readerType");
-            bw.newLine();
-            bw.write("# readerType: STUDENT | PRIORITY_STUDENT | LECTURER");
-            bw.newLine();
-            for (Reader r : readers) {
-                bw.write(toLine(r));
-                bw.newLine();
-            }
-        }
+    public void saveToFile() {
+        File file = new File(FILE_PATH);
+        if (file.getParentFile() != null) file.getParentFile().mkdirs();
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+            for (Reader r : readers) bw.write(toLine(r) + "\n");
+        } catch (IOException e) { e.printStackTrace(); }
     }
 
-    // ─── Helper: parse dòng → Reader ───────────────────────────────────────────
-
-    /**
-     * Phân tích một dòng text từ file thành đối tượng Reader.
-     *
-     * @param line một dòng trong file
-     * @return Reader tương ứng, hoặc null nếu dòng không hợp lệ
-     */
     private Reader parseLine(String line) {
-        String[] parts = line.split("\\|");
-        if (parts.length < 4) return null;
-
-        String id    = parts[0].trim();
-        String name  = parts[1].trim();
-        String phone = parts[2].trim();
-        String type  = parts[3].trim();
-
-        switch (type) {
-            case TYPE_STUDENT:
-                return new StudentReader(id, name, phone);
-            case TYPE_PRIORITY_STUDENT:
-                return new PriorityStudentReader(id, name, phone);
-            case TYPE_LECTURER:
-                return new LecturerReader(id, name, phone);
-            default:
-                System.err.println("[ReaderRepository] Loại bạn đọc không hợp lệ: " + type);
-                return null;
+        String[] p = line.split("\\|");
+        if (p.length < 4) return null;
+        switch (p[3].trim()) {
+            case "STUDENT": return new StudentReader(p[0].trim(), p[1].trim(), p[2].trim());
+            case "PRIORITY_STUDENT": return new PriorityStudentReader(p[0].trim(), p[1].trim(), p[2].trim());
+            case "LECTURER": return new LecturerReader(p[0].trim(), p[1].trim(), p[2].trim());
+            default: return null;
         }
     }
 
-    // ─── Helper: Reader → dòng text ────────────────────────────────────────────
-
-    /**
-     * Chuyển đối tượng Reader thành chuỗi để lưu vào file.
-     */
     private String toLine(Reader r) {
-        String type;
-        if (r instanceof LecturerReader)         type = TYPE_LECTURER;
-        else if (r instanceof PriorityStudentReader) type = TYPE_PRIORITY_STUDENT;
-        else                                     type = TYPE_STUDENT;
-
+        String type = (r instanceof LecturerReader) ? "LECTURER" : (r instanceof PriorityStudentReader) ? "PRIORITY_STUDENT" : "STUDENT";
         return r.getUserId() + "|" + r.getFullName() + "|" + r.getPhoneNumber() + "|" + type;
     }
+
+    private void initMockData() {
+        readers.add(new StudentReader("SV001", "Nguyen Van An", "0912345678"));
+        readers.add(new LecturerReader("GV001", "Tran Duc Thanh", "0944556677"));
+        saveToFile();
+    }
+
+    // Hàm bọc tương thích ngược
+    public List<Reader> readAll() { return new ArrayList<>(readers); }
+    public void writeAll(List<Reader> list) { this.readers.clear(); this.readers.addAll(list); saveToFile(); }
 }
