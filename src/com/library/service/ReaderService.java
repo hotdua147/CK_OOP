@@ -1,211 +1,115 @@
 package com.library.service;
 
-import com.library.model.*;
+import com.library.model.Reader;
 import com.library.repository.ReaderRepository;
-import com.library.utils.ValidationUtils;
-
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Xử lý toàn bộ logic nghiệp vụ liên quan đến Bạn đọc.
- *
- * Chức năng:
- * - Thêm / sửa / xóa bạn đọc
- * - Tìm kiếm theo mã, theo tên
- * - Hiển thị danh sách
- * - Kiểm tra giới hạn mượn sách (dùng bởi BorrowReturnService)
+ * Tầng xử lý logic nghiệp vụ liên quan đến Độc giả (Bạn đọc).
+ * Đã loại bỏ hoàn toàn sự phụ thuộc vào ValidationUtils bằng cách chuẩn hóa bộ lọc kiểm tra inline,
+ * và đồng bộ chính xác với cấu trúc ReaderRepository mới.
  */
 public class ReaderService {
-
     private final ReaderRepository readerRepository;
-    private List<Reader> readerList;
-
-    // ─── Constructor ───────────────────────────────────────────────────────────
 
     /**
-     * Khởi tạo service và nạp dữ liệu từ file.
-     *
-     * @throws IOException nếu có lỗi đọc file
+     * Constructor tiêm (Inject) ReaderRepository từ ngoài vào để tương tác dữ liệu.
      */
-    public ReaderService() throws IOException {
-        this.readerRepository = new ReaderRepository();
-        this.readerList       = readerRepository.readAll();
-    }
-
-    // ─── Thêm bạn đọc ─────────────────────────────────────────────────────────
-
-    /**
-     * Thêm một bạn đọc mới vào hệ thống.
-     *
-     * @param reader đối tượng Reader cần thêm
-     * @throws IOException              nếu ghi file thất bại
-     * @throws IllegalArgumentException nếu dữ liệu không hợp lệ
-     */
-    public void addReader(Reader reader) throws IOException {
-        // Kiểm tra dữ liệu đầu vào thông qua utils
-        if (ValidationUtils.isEmpty(reader.getUserId()))
-            throw new IllegalArgumentException("Mã bạn đọc không được để trống.");
-        if (ValidationUtils.isEmpty(reader.getFullName()))
-            throw new IllegalArgumentException("Họ tên không được để trống.");
-        if (!ValidationUtils.isValidPhone(reader.getPhoneNumber()))
-            throw new IllegalArgumentException("Số điện thoại không hợp lệ: " + reader.getPhoneNumber());
-        if (findById(reader.getUserId()) != null)
-            throw new IllegalArgumentException("Mã bạn đọc đã tồn tại: " + reader.getUserId());
-
-        readerList.add(reader);
-        readerRepository.writeAll(readerList);
-        System.out.println("[OK] Đã thêm bạn đọc: " + reader.getFullName() + " (" + reader.getUserId() + ")");
-    }
-
-    // ─── Cập nhật thông tin ───────────────────────────────────────────────────
-
-    /**
-     * Cập nhật họ tên hoặc số điện thoại của bạn đọc.
-     *
-     * @param readerId mã bạn đọc cần cập nhật
-     * @param newName  họ tên mới (truyền null để giữ nguyên)
-     * @param newPhone số điện thoại mới (truyền null để giữ nguyên)
-     */
-    public void updateReader(String readerId, String newName, String newPhone) throws IOException {
-        Reader r = findById(readerId);
-        if (r == null)
-            throw new IllegalArgumentException("Không tìm thấy bạn đọc với mã: " + readerId);
-
-        if (!ValidationUtils.isEmpty(newName)) {
-            r.setFullName(newName);
+    public ReaderService(ReaderRepository readerRepository) {
+        if (readerRepository == null) {
+            throw new IllegalArgumentException("Lỗi hệ thống: ReaderRepository truyền vào không được phép để null!");
         }
-        if (!ValidationUtils.isEmpty(newPhone)) {
-            if (!ValidationUtils.isValidPhone(newPhone))
-                throw new IllegalArgumentException("Số điện thoại không hợp lệ: " + newPhone);
-            r.setPhoneNumber(newPhone);
-        }
-
-        readerRepository.writeAll(readerList);
-        System.out.println("[OK] Đã cập nhật thông tin bạn đọc: " + readerId);
+        this.readerRepository = readerRepository;
     }
 
-    // ─── Xóa bạn đọc ─────────────────────────────────────────────────────────
-
     /**
-     * Xóa bạn đọc khỏi hệ thống.
+     * Lấy danh sách toàn bộ độc giả có trên hệ thống để hiển thị lên giao diện UI.
      *
-     * @param readerId mã bạn đọc cần xóa
-     */
-    public void deleteReader(String readerId) throws IOException {
-        Reader r = findById(readerId);
-        if (r == null)
-            throw new IllegalArgumentException("Không tìm thấy bạn đọc với mã: " + readerId);
-
-        readerList.remove(r);
-        readerRepository.writeAll(readerList);
-        System.out.println("[OK] Đã xóa bạn đọc: " + readerId);
-    }
-
-    // ─── Tìm kiếm ─────────────────────────────────────────────────────────────
-
-    /**
-     * Tìm bạn đọc theo mã (chính xác, không phân biệt hoa thường).
-     *
-     * @return Reader nếu tìm thấy, null nếu không
-     */
-    public Reader findById(String readerId) {
-        if (ValidationUtils.isEmpty(readerId)) return null;
-        for (Reader r : readerList) {
-            if (r.getUserId().equalsIgnoreCase(readerId.trim())) {
-                return r;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Tìm bạn đọc theo họ tên (tìm kiếm gần đúng, không phân biệt hoa thường).
-     *
-     * @return danh sách Reader khớp với từ khóa
-     */
-    public List<Reader> findByName(String keyword) {
-        List<Reader> result = new ArrayList<>();
-        if (ValidationUtils.isEmpty(keyword)) return result;
-
-        String lowerKeyword = keyword.trim().toLowerCase();
-        for (Reader r : readerList) {
-            if (r.getFullName().toLowerCase().contains(lowerKeyword)) {
-                result.add(r);
-            }
-        }
-        return result;
-    }
-
-    // ─── Kiểm tra giới hạn mượn ───────────────────────────────────────────────
-
-    /**
-     * Kiểm tra bạn đọc có thể mượn thêm sách không.
-     * Gọi bởi BorrowReturnService (Trưởng nhóm).
-     *
-     * @param readerId       mã bạn đọc
-     * @param currentBorrows số sách đang mượn hiện tại
-     * @param requestAmount  số sách muốn mượn thêm
-     * @return true nếu được phép, false nếu vượt giới hạn
-     */
-    public boolean canBorrow(String readerId, int currentBorrows, int requestAmount) {
-        Reader r = findById(readerId);
-        if (r == null) return false;
-        return (currentBorrows + requestAmount) <= r.getMaxBorrowLimit();
-    }
-
-    // ─── Lấy danh sách ────────────────────────────────────────────────────────
-
-    /**
-     * Trả về toàn bộ danh sách bạn đọc.
+     * @return Danh sách Độc giả (Chỉ đọc)
      */
     public List<Reader> getAllReaders() {
-        return new ArrayList<>(readerList);
-    }
-
-    // ─── Hiển thị ─────────────────────────────────────────────────────────────
-
-    /**
-     * In danh sách tất cả bạn đọc ra console (dạng bảng).
-     */
-    public void displayAll() {
-        if (readerList.isEmpty()) {
-            System.out.println("Danh sách bạn đọc trống.");
-            return;
-        }
-        System.out.println("\n╔══════════════════════════════════════════════════════════════════════════╗");
-        System.out.println("║                       DANH SÁCH BẠN ĐỌC                                  ║");
-        System.out.println("╚══════════════════════════════════════════════════════════════════════════╝");
-        System.out.printf("%-10s %-25s %-13s %-22s %-12s%n",
-                "Mã BD", "Họ tên", "SĐT", "Loại bạn đọc", "Mượn tối đa");
-        System.out.println("─".repeat(86));
-        for (Reader r : readerList) {
-            System.out.printf("%-10s %-25s %-13s %-22s %-12d%n",
-                    r.getUserId(),
-                    r.getFullName(),
-                    r.getPhoneNumber(),
-                    r.getReaderType(),
-                    r.getMaxBorrowLimit());
-        }
-        System.out.println("─".repeat(86));
-        System.out.println("Tổng số bạn đọc: " + readerList.size());
+        return readerRepository.getAll();
     }
 
     /**
-     * In kết quả tìm kiếm ra console.
+     * Tìm kiếm một độc giả cụ thể dựa vào mã bạn đọc.
+     *
+     * @param readerId Mã độc giả cần tìm (Ví dụ: BD001)
+     * @return Đối tượng Reader nếu tìm thấy
      */
-    public void displayReaders(List<Reader> list, String searchInfo) {
-        if (list.isEmpty()) {
-            System.out.println("Không tìm thấy bạn đọc với: " + searchInfo);
-            return;
+    public Reader getReaderById(String readerId) {
+        if (readerId == null || readerId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Lỗi: Mã bạn đọc tìm kiếm không được phép để trống!");
         }
-        System.out.println("\n=== Kết quả tìm kiếm: " + searchInfo + " ===");
-        System.out.printf("%-10s %-25s %-13s %-22s%n", "Mã BD", "Họ tên", "SĐT", "Loại bạn đọc");
-        System.out.println("─".repeat(72));
-        for (Reader r : list) {
-            System.out.printf("%-10s %-25s %-13s %-22s%n",
-                    r.getUserId(), r.getFullName(), r.getPhoneNumber(), r.getReaderType());
+
+        Reader reader = readerRepository.findById(readerId.trim());
+        if (reader == null) {
+            throw new IllegalArgumentException("Lỗi nghiệp vụ: Không tìm thấy bạn đọc có mã '" + readerId + "' trong hệ thống!");
+        }
+        return reader;
+    }
+
+    /**
+     * Nghiệp vụ thêm mới một bạn đọc vào hệ thống thư viện.
+     * Tự động kiểm tra định dạng dữ liệu đầu vào không cần ValidationUtils.
+     */
+    public void addReader(Reader reader) {
+        if (reader == null || reader.getUserId() == null) {
+            throw new IllegalArgumentException("Lỗi: Dữ liệu tài khoản bạn đọc không hợp lệ!");
+        }
+
+        // Kiểm tra phòng vệ chống trùng lặp mã ID
+        if (readerRepository.findById(reader.getUserId()) != null) {
+            throw new IllegalArgumentException("Lỗi nghiệp vụ: Mã bạn đọc '" + reader.getUserId() + "' đã tồn tại trên hệ thống!");
+        }
+
+        // Kiểm tra tính hợp lệ của họ tên và số điện thoại
+        validateReaderData(reader.getFullName(), reader.getPhoneNumber());
+
+        // Đưa vào kho lưu trữ dữ liệu và kích hoạt lưu file text cứng
+        readerRepository.add(reader);
+        System.out.println("[ReaderService] Thêm bạn đọc mới thành công: " + reader.getFullName());
+    }
+
+    /**
+     * Nghiệp vụ cập nhật thông tin chỉnh sửa của một bạn đọc hiện hành.
+     */
+    public void updateReader(Reader reader) {
+        if (reader == null || reader.getUserId() == null) {
+            throw new IllegalArgumentException("Lỗi: Dữ liệu cập nhật bạn đọc không hợp lệ!");
+        }
+
+        // Bẫy lỗi nếu đối tượng chỉnh sửa không có thật trong kho dữ liệu
+        Reader existing = readerRepository.findById(reader.getUserId());
+        if (existing == null) {
+            throw new IllegalArgumentException("Lỗi nghiệp vụ: Không tìm thấy bạn đọc mang mã '" + reader.getUserId() + "' để cập nhật!");
+        }
+
+        // Kiểm tra tính hợp lệ của họ tên và số điện thoại mới
+        validateReaderData(reader.getFullName(), reader.getPhoneNumber());
+
+        // Kích hoạt đồng bộ sửa đổi xuống file cứng
+        readerRepository.update(reader);
+        System.out.println("[ReaderService] Cập nhật thông tin bạn đọc thành công: " + reader.getFullName());
+    }
+
+    /**
+     * BỘ LỌC KIỂM TRA DỮ LIỆU NỘI BỘ (Thay thế hoàn toàn cho ValidationUtils bị mất)
+     * Đảm bảo tính đóng gói nghiệp vụ sạch sẽ ngay tại tầng Service.
+     */
+    private void validateReaderData(String fullName, String phoneNumber) {
+        if (fullName == null || fullName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Lỗi nghiệp vụ: Họ và tên bạn đọc không được phép để trống!");
+        }
+        if (fullName.trim().length() < 2) {
+            throw new IllegalArgumentException("Lỗi nghiệp vụ: Họ và tên quá ngắn, vui lòng nhập đầy đủ họ tên!");
+        }
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+            throw new IllegalArgumentException("Lỗi nghiệp vụ: Số điện thoại liên lạc không được phép để trống!");
+        }
+        // Kiểm tra số điện thoại bằng biểu thức chính quy Regex tiêu chuẩn (Yêu cầu chỉ chứa từ 10 đến 11 chữ số)
+        if (!phoneNumber.trim().matches("\\d{10,11}")) {
+            throw new IllegalArgumentException("Lỗi định dạng: Số điện thoại không hợp lệ! (Phải chứa từ 10 đến 11 ký tự số).");
         }
     }
 }

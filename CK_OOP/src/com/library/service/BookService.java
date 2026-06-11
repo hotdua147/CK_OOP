@@ -1,6 +1,5 @@
 package com.library.service;
 
-import com.library.model.Book;
 import com.library.repository.BookRepository;
 
 import java.util.ArrayList;

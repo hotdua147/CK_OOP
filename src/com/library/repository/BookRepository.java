@@ -7,27 +7,35 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Tầng quản lý lưu trữ dữ liệu Sách - Đọc ghi file cứng data/books.txt
- * Đã được chuẩn hóa tương thích đa nền tảng và bọc phòng thủ lỗi bóc tách dữ liệu.
+ * Tầng quản lý lưu trữ dữ liệu Sách - Đọc ghi file văn bản 'data/books.txt'
+ * NÂNG CẤP: Quản lý đầy đủ cấu trúc dữ liệu 6 thuộc tính theo yêu cầu đề bài lớn.
  */
 public class BookRepository {
     private static final String FILE_PATH = "data/books.txt";
-    private final List<Book> books;
+    private final List<Book> books = new ArrayList<>();
 
+    /**
+     * Khởi tạo tầng lưu trữ và tự động nạp dữ liệu từ file văn bản lên bộ nhớ RAM.
+     */
     public BookRepository() {
-        this.books = new ArrayList<>();
-        loadFromFile(); // Tự động nạp dữ liệu từ file lên RAM khi khởi tạo
+        loadFromFile();
     }
 
     /**
-     * Lấy toàn bộ danh sách sách dưới dạng Chỉ đọc (Bảo vệ dữ liệu RAM)
+     * Lấy danh sách toàn bộ sách hiện có trên bộ nhớ RAM dưới dạng chỉ đọc.
+     * Áp dụng tính năng Defensive Copy để bảo vệ cấu trúc danh sách gốc.
+     *
+     * @return Danh sách Sách không thể sửa đổi cấu trúc từ bên ngoài.
      */
     public List<Book> getAll() {
         return Collections.unmodifiableList(books);
     }
 
     /**
-     * Tìm kiếm sách theo mã ID (Không phân biệt hoa thường)
+     * Tìm kiếm một cuốn sách cụ thể dựa trên Mã sách (Không phân biệt chữ hoa, chữ thường).
+     *
+     * @param bookId Mã cuốn sách cần tìm
+     * @return Đối tượng Book nếu tìm thấy, ngược lại trả về null
      */
     public Book findById(String bookId) {
         if (bookId == null) return null;
@@ -41,33 +49,30 @@ public class BookRepository {
     }
 
     /**
-     * Cập nhật thông tin hoặc số lượng sách trên RAM và đồng bộ xuống file
+     * Cập nhật thông tin một cuốn sách trên bộ nhớ RAM và tự động đồng bộ xuống file text cứng.
+     *
+     * @param updatedBook Đối tượng sách mang thông tin mới cần cập nhật
      */
     public void update(Book updatedBook) {
         if (updatedBook == null) return;
-
-        boolean isUpdated = false;
         for (int i = 0; i < books.size(); i++) {
             if (books.get(i).getBookId().equalsIgnoreCase(updatedBook.getBookId())) {
-                books.set(i, updatedBook); // Cập nhật trên RAM
-                isUpdated = true;
-                break;
+                books.set(i, updatedBook);
+                saveToFile(); // Tự động đồng bộ thời gian thực xuống file text
+                return;
             }
-        }
-
-        if (isUpdated) {
-            saveToFile(); // Đồng bộ ngay xuống file text
         }
     }
 
     /**
-     * Đọc dữ liệu từ file books.txt lên bộ nhớ RAM
+     * Đọc và bóc tách dữ liệu từ file text 'data/books.txt' đưa lên RAM.
      */
     private void loadFromFile() {
         books.clear();
         File file = new File(FILE_PATH);
+
+        // Nếu file không tồn tại, tiến hành sinh dữ liệu mẫu ban đầu để chạy ứng dụng
         if (!file.exists()) {
-            // Tạo dữ liệu giả định ban đầu nếu file chưa tồn tại để hệ thống có thể chạy ngay
             initMockData();
             return;
         }
@@ -76,64 +81,73 @@ public class BookRepository {
             String line;
             while ((line = br.readLine()) != null) {
                 line = line.trim();
-                if (line.isEmpty() || line.startsWith("#")) {
-                    continue; // Bỏ qua dòng trống và dòng chú thích
-                }
+                // Bỏ qua dòng trống hoặc dòng ghi chú (comment) bắt đầu bằng ký tự #
+                if (line.isEmpty() || line.startsWith("#")) continue;
 
                 try {
-                    // Định dạng file quy ước: MãSách|TênSách|SốLượng
                     String[] parts = line.split("\\|");
-                    if (parts.length >= 3) {
-                        String bookId = parts[0].trim();
+                    // Trường hợp 1: Dữ liệu chuẩn hóa mới đầy đủ 6 cột
+                    if (parts.length >= 6) {
+                        String id = parts[0].trim();
+                        String title = parts[1].trim();
+                        String author = parts[2].trim();
+                        String category = parts[3].trim();
+                        int quantity = Integer.parseInt(parts[4].trim());
+                        double price = Double.parseDouble(parts[5].trim());
+
+                        books.add(new Book(id, title, author, category, quantity, price));
+                    }
+                    // Trường hợp 2: Tương thích ngược với file mẫu cũ chỉ chứa 3 cột
+                    else if (parts.length == 3) {
+                        String id = parts[0].trim();
                         String title = parts[1].trim();
                         int quantity = Integer.parseInt(parts[2].trim());
 
-                        books.add(new Book(bookId, title, quantity));
+                        books.add(new Book(id, title, quantity));
                     }
                 } catch (Exception e) {
-                    System.err.println("[BookRepository] Bỏ qua dòng lỗi định dạng: " + line);
+                    System.err.println("[BookRepository] Bỏ qua dòng dữ liệu lỗi định dạng: " + line);
                 }
             }
         } catch (IOException e) {
-            System.err.println("[BookRepository] Lỗi nghiêm trọng khi đọc file dữ liệu sách: " + e.getMessage());
+            System.err.println("[BookRepository] Lỗi nghiêm trọng xảy ra khi đọc file sách: " + e.getMessage());
         }
     }
 
     /**
-     * Ghi ngược dữ liệu từ RAM xuống file cứng đa nền tảng
+     * Ghi đè toàn bộ danh sách sách từ bộ nhớ RAM xuống file văn bản 'data/books.txt'.
      */
     private void saveToFile() {
         File file = new File(FILE_PATH);
-        File parentDir = file.getParentFile();
-        if (parentDir != null && !parentDir.exists()) {
-            parentDir.mkdirs(); // Tự động tạo thư mục data/ nếu chưa có
+        if (file.getParentFile() != null) {
+            file.getParentFile().mkdirs();
         }
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
-            bw.write("# =================================================="); bw.newLine();
-            bw.write("# CẤU TRÚC DỮ LIỆU FILE BOOKS.TXT (QUẢN LÝ KHO SÁCH)"); bw.newLine();
-            bw.write("# Quy luật định dạng: MãSách|TênSách|SốLượng Kho"); bw.newLine();
-            bw.write("# =================================================="); bw.newLine();
+            // Ghi dòng tiêu đề cấu trúc hướng dẫn cho file văn bản
+            bw.write("# MãSách|TênSách|TácGiả|ThểLoại|SốLượng|GiáTrị");
             bw.newLine();
 
             for (Book b : books) {
-                bw.write(String.format("%s|%s|%d", b.getBookId(), b.getTitle(), b.getQuantity()));
+                // Sử dụng định dạng %.0f để hiển thị giá tiền gọn gàng không dính đuôi thập phân .0
+                bw.write(String.format("%s|%s|%s|%s|%d|%.0f",
+                        b.getBookId(), b.getTitle(), b.getAuthor(), b.getCategory(), b.getQuantity(), b.getPrice()));
                 bw.newLine();
             }
         } catch (IOException e) {
-            System.err.println("[BookRepository] Lỗi nghiêm trọng khi ghi file dữ liệu sách: " + e.getMessage());
+            System.err.println("[BookRepository] Lỗi nghiêm trọng xảy ra khi ghi file sách: " + e.getMessage());
         }
     }
 
     /**
-     * Khởi tạo kho dữ liệu sách mẫu ban đầu nếu máy chạy lần đầu chưa có file
+     * Khởi tạo bộ dữ liệu mẫu chuẩn 6 thuộc tính cho lần chạy đầu tiên.
      */
     private void initMockData() {
-        books.add(new Book("B001", "Lap trinh Java can ban", 15));
-        books.add(new Book("B002", "Cau truc du lieu va Giai thuat", 8));
-        books.add(new Book("B003", "Thiet ke huong doi tuong OOP", 12));
-        books.add(new Book("B004", "Co so du lieu va SQL", 5));
-        books.add(new Book("B005", "Phan tich va Thiet ke he thong", 20));
-        saveToFile(); // Lưu ngay ra file text
+        books.add(new Book("B001", "Lap trinh Java can ban", "Nguyen Van A", "Giao trinh", 14, 50000.0));
+        books.add(new Book("B002", "Cau truc du lieu va Giai thuat", "Tran Van B", "Giao trinh", 8, 60000.0));
+        books.add(new Book("B003", "Thiet ke huong doi tuong OOP", "Le Thi C", "Tham khao", 12, 75000.0));
+        books.add(new Book("B004", "Co so du lieu va SQL", "Phan Van D", "Giao trinh", 5, 55000.0));
+        books.add(new Book("B005", "Phan tich va Thiet ke he thong", "Hoang Ngoc E", "Tham khao", 20, 90000.0));
+        saveToFile(); // Lưu ngay xuống file
     }
 }

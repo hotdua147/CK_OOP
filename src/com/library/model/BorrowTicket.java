@@ -6,12 +6,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Phiếu mượn sách của thư viện - Đã được chuẩn hóa và nâng cấp bảo mật dữ liệu
+ * Lớp thực thể đại diện cho Phiếu mượn/trả sách của thư viện.
+ * Quản lý trạng thái mượn và danh sách chi tiết các cuốn sách được mượn cùng lúc.
  */
 public class BorrowTicket {
 
     /**
-     * Định nghĩa Enum cho Trạng thái phiếu mượn để tránh lỗi gõ sai chính tả String
+     * Định nghĩa Enum quản lý trạng thái phiếu mượn chống sai sót dữ liệu chuỗi.
      */
     public enum TicketStatus {
         BORROWING("Đang mượn"),
@@ -28,16 +29,16 @@ public class BorrowTicket {
         }
 
         /**
-         * Chuyển đổi từ chuỗi tiếng Việt trong file txt sang Enum tương ứng
+         * Chuyển đổi linh hoạt từ văn bản tiếng Việt của file .txt sang Enum tương ứng.
          */
         public static TicketStatus fromValue(String value) {
+            if (value == null) return BORROWING;
             for (TicketStatus status : TicketStatus.values()) {
                 if (status.getValue().equalsIgnoreCase(value.trim())) {
                     return status;
                 }
             }
-            // Mặc định trả về Đang mượn nếu chuỗi không khớp
-            return BORROWING;
+            return BORROWING; // Mặc định là đang mượn nếu dữ liệu không khớp
         }
     }
 
@@ -45,118 +46,92 @@ public class BorrowTicket {
     private String readerId;
     private LocalDate borrowDate;
     private LocalDate dueDate;
-    private LocalDate returnDate;
-    private TicketStatus status; // Thay thế String bằng Enum
+    private LocalDate returnDate; // Sẽ là null nếu độc giả chưa trả sách
+    private TicketStatus status;
     private double fineAmount;
-    private final List<BorrowTicketDetail> details; // Sử dụng final để cố định tham chiếu danh sách
+    private final List<BorrowTicketDetail> details = new ArrayList<>();
 
     /**
-     * Constructor 1: Dùng khi tạo mới phiếu mượn thực tế ở tầng Service
+     * Constructor khởi tạo một phiếu mượn mới.
      */
     public BorrowTicket(String ticketId, String readerId, LocalDate borrowDate, LocalDate dueDate) {
-        if (ticketId == null || ticketId.trim().isEmpty()) throw new IllegalArgumentException("Mã phiếu không được trống.");
-        if (readerId == null || readerId.trim().isEmpty()) throw new IllegalArgumentException("Mã bạn đọc không được trống.");
-        if (borrowDate == null || dueDate == null) throw new IllegalArgumentException("Ngày mượn và ngày hẹn trả không được null.");
-
-        this.ticketId = ticketId;
-        this.readerId = readerId;
+        this.ticketId = ticketId != null ? ticketId.trim() : "";
+        this.readerId = readerId != null ? readerId.trim() : "";
         this.borrowDate = borrowDate;
         this.dueDate = dueDate;
-        this.status = TicketStatus.BORROWING; // Mặc định khi tạo mới
-        this.fineAmount = 0.0; //
-        this.details = new ArrayList<>(); //
+        this.status = TicketStatus.BORROWING; // Phiếu mới tạo luôn ở trạng thái Đang mượn
+        this.fineAmount = 0.0;
     }
 
-    /**
-     * Constructor 2: Dùng khi khôi phục dữ liệu từ file dữ liệu txt lên hệ thống
-     * Đã tích hợp phòng thủ lỗi Null chống Sập RAM nếu file dữ liệu thiếu sót.
-     */
-    public BorrowTicket(String ticketId, String readerId, LocalDate borrowDate, LocalDate dueDate,
-                        LocalDate returnDate, String statusStr, double fineAmount, List<BorrowTicketDetail> details) {
-        this.ticketId = ticketId;
-        this.readerId = readerId;
-        this.borrowDate = borrowDate;
-        this.dueDate = dueDate; //
-        this.returnDate = returnDate; //
-        this.status = TicketStatus.fromValue(statusStr); // Ép kiểu an toàn từ String sang Enum
-        this.fineAmount = fineAmount < 0 ? 0.0 : fineAmount; // Ngăn chặn tiền phạt âm vô lý
+    // ─── Getters & Setters (Tuân thủ tính Encapsulation) ───────────
 
-        // Phòng thủ lỗi Null: Nếu danh sách truyền vào bị null thì chủ động tạo mới array trống
-        this.details = (details != null) ? details : new ArrayList<>();
-    }
+    public String getTicketId() { return ticketId; }
+    public void setTicketId(String ticketId) { this.ticketId = ticketId; }
 
-    /**
-     * Thêm một dòng sách chi tiết vào phiếu
-     */
-    public void addDetail(BorrowTicketDetail detail) {
-        if (detail == null) {
-            throw new IllegalArgumentException("Chi tiết sách mượn không được để trống (null).");
-        }
-        this.details.add(detail); //
-    }
+    public String getReaderId() { return readerId; }
+    public void setReaderId(String readerId) { this.readerId = readerId; }
 
-    /**
-     * Trả về danh sách chi tiết dưới dạng CHỈ ĐỌC (Unmodifiable List)
-     * Ngăn chặn tuyệt đối việc các tầng khác tự ý can thiệp .clear() hoặc .remove() danh sách gốc.
-     */
-    public List<BorrowTicketDetail> getDetails() {
-        return Collections.unmodifiableList(details);
-    }
+    public LocalDate getBorrowDate() { return borrowDate; }
+    public void setBorrowDate(LocalDate borrowDate) { this.borrowDate = borrowDate; }
 
-    /**
-     * Chuyển đổi dữ liệu Object thành chuỗi định dạng chuẩn để ghi trực tiếp vào file tickets.txt
-     * Đồng bộ tuyệt đối cấu trúc với tầng Repository.
-     */
-    public String toFileFormat() {
-        StringBuilder detailsStr = new StringBuilder();
-        if (details.isEmpty()) {
-            detailsStr.append("null");
-        } else {
-            for (int i = 0; i < details.size(); i++) {
-                detailsStr.append(details.get(i).toString());
-                if (i < details.size() - 1) {
-                    detailsStr.append(",");
-                }
-            }
-        }
-        return String.format("%s|%s|%s|%s|%s|%s|%.1f|%s",
-                ticketId,
-                readerId,
-                borrowDate,
-                dueDate,
-                returnDate == null ? "null" : returnDate,
-                status.getValue(), // Lấy chuỗi tiếng Việt của Enum để ghi vào file
-                fineAmount,
-                detailsStr.toString()
-        );
-    }
+    public LocalDate getDueDate() { return dueDate; }
+    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
 
-    // ====================================================================================================
-    // GETTER VÀ SETTER (Tuân thủ tính Encapsulation)
-    // ====================================================================================================
+    public LocalDate getReturnDate() { return returnDate; }
+    public void setReturnDate(LocalDate returnDate) { this.returnDate = returnDate; }
 
-    public String getTicketId() { return ticketId; } //
-    public void setTicketId(String ticketId) { this.ticketId = ticketId; } //
-
-    public String getReaderId() { return readerId; } //
-    public void setReaderId(String readerId) { this.readerId = readerId; } //
-
-    public LocalDate getBorrowDate() { return borrowDate; } //
-    public void setBorrowDate(LocalDate borrowDate) { this.borrowDate = borrowDate; } //
-
-    public LocalDate getDueDate() { return dueDate; } //
-    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; } //
-
-    public LocalDate getReturnDate() { return returnDate; } //
-    public void setReturnDate(LocalDate returnDate) { this.returnDate = returnDate; } //
-
-    // Chuyển đổi linh hoạt Getter/Setter trạng thái để phục vụ so sánh logic nội bộ dạng Enum lẫn String
     public TicketStatus getStatus() { return status; }
     public void setStatus(TicketStatus status) { this.status = status; }
 
     public String getStatusValue() { return status.getValue(); }
     public void setStatusByValue(String statusStr) { this.status = TicketStatus.fromValue(statusStr); }
 
-    public double getFineAmount() { return fineAmount; } //
-    public void setFineAmount(double fineAmount) { this.fineAmount = fineAmount; } //
+    public double getFineAmount() { return fineAmount; }
+    public void setFineAmount(double fineAmount) {
+        this.fineAmount = Math.max(0.0, fineAmount); // Chặn giá trị tiền phạt âm
+    }
+
+    /**
+     * Lấy danh sách chi tiết các cuốn sách mượn.
+     * @return Một bản sao danh sách Chỉ đọc (Defensive Copy) để bảo vệ an toàn dữ liệu RAM.
+     */
+    public List<BorrowTicketDetail> getDetails() {
+        return Collections.unmodifiableList(details);
+    }
+
+    /**
+     * Thêm dòng chi tiết cuốn sách được đăng ký mượn vào phiếu.
+     */
+    public void addDetail(BorrowTicketDetail detail) {
+        if (detail != null) {
+            this.details.add(detail);
+        }
+    }
+
+    // ─── Xử lý định dạng File text IO ─────────────────────────────────────────
+
+    /**
+     * Chuyển đổi toàn bộ thông tin phiếu mượn thành một dòng text chuẩn hóa
+     * phân tách bằng dấu gạch đứng để ghi xuống file tickets.txt.
+     */
+    public String toFileFormat() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < details.size(); i++) {
+            sb.append(details.get(i).toString());
+            if (i < details.size() - 1) {
+                sb.append(",");
+            }
+        }
+
+        // Trả về chuỗi map khớp hoàn toàn 8 cột dữ liệu lưu trữ
+        return String.format("%s|%s|%s|%s|%s|%s|%.1f|%s",
+                ticketId,
+                readerId,
+                borrowDate,
+                dueDate,
+                (returnDate == null ? "null" : returnDate.toString()), // Đồng bộ giá trị null dạng text
+                status.getValue(),
+                fineAmount,
+                sb.toString());
+    }
 }

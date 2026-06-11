@@ -42,7 +42,7 @@ public class BookService {
         return book;
     }
 
-    /**
+    /**a
      * Cập nhật số lượng sách trong kho
      */
     public void updateBookQuantity(String bookId, int newQuantity) {

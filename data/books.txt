@@ -1,10 +1,6 @@
-# ==================================================
-# CẤU TRÚC DỮ LIỆU FILE BOOKS.TXT (QUẢN LÝ KHO SÁCH)
-# Quy luật định dạng: MãSách|TênSách|SốLượng Kho
-# ==================================================
-
-B001|Lap trinh Java can ban|15
-B002|Cau truc du lieu va Giai thuat|8
-B003|Thiet ke huong doi tuong OOP|12
-B004|Co so du lieu va SQL|5
-B005|Phan tich va Thiet ke he thong|20
+# MãSách|TênSách|TácGiả|ThểLoại|SốLượng|GiáTrị
+B001|Lap trinh Java can ban|Nguyen Van A|Giao trinh|15|50000
+B002|Cau truc du lieu va Giai thuat|Tran Van B|Giao trinh|8|60000
+B003|Thiet ke huong doi tuong OOP|Le Thi C|Tham khao|11|75000
+B004|Co so du lieu va SQL|Phan Van D|Giao trinh|5|55000
+B005|Phan tich va Thiet ke he thong|Hoang Ngoc E|Tham khao|20|90000
