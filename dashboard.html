@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Thư Viện Cao Cấp - Nhóm 4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .sidebar-item.active {
+            background-color: #4f46e5;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800">
+
+<div class="flex h-screen overflow-hidden">
+    <div class="w-64 bg-slate-900 text-white flex flex-col justify-between hidden md:flex">
+        <div class="p-5">
+            <div class="flex items-center space-x-3 mb-8">
+                <i class="fa-solid fa-book-open-reader text-indigo-400 text-3xl"></i>
+                <div>
+                    <h1 class="text-lg font-bold tracking-wider">LIB-MANAGEMENT</h1>
+                    <p class="text-xs text-slate-400">Đồ án Nhóm 4 - Phiên bản 2.0</p>
+                </div>
+            </div>
+            <nav class="space-y-2">
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="sidebar-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all text-left active">
+                    <i class="fa-solid fa-chart-pie w-5"></i> <span>Bảng Tổng Quan</span>
+                </button>
+                <button onclick="switchTab('books')" id="btn-books" class="sidebar-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all text-left">
+                    <i class="fa-solid fa-book w-5"></i> <span>Quản Lý Sách</span>
+                </button>
+                <button onclick="switchTab('readers')" id="btn-readers" class="sidebar-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all text-left">
+                    <i class="fa-solid fa-users w-5"></i> <span>Quản Lý Độc Giả</span>
+                </button>
+                <button onclick="switchTab('transactions')" id="btn-transactions" class="sidebar-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all text-left">
+                    <i class="fa-solid fa-right-left w-5"></i> <span>Mượn - Trả Sách</span>
+                </button>
+            </nav>
+        </div>
+        <div class="p-5 border-t border-slate-800 flex items-center space-x-2 text-xs text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            <span>Spring Boot Backend Connected</span>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col overflow-y-auto">
+        <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 sticky top-0 z-40 shadow-sm">
+            <h2 id="page-title" class="text-xl font-bold text-gray-800">Bảng Điều Khiển Tổng Quan</h2>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm font-medium bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full">Thủ Thư: Nhóm 4</span>
+            </div>
+        </header>
+
+        <main class="p-6 max-w-7xl w-full mx-auto space-y-6 flex-grow">
+
+            <div id="tab-dashboard" class="tab-content space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase">Tổng đầu sách trong kho</p>
+                            <h3 id="stat-books-count" class="text-3xl font-bold text-slate-900 mt-1">0</h3>
+                        </div>
+                        <div class="p-4 bg-indigo-50 rounded-xl text-indigo-600"><i class="fa-solid fa-bookmark text-2xl"></i></div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase">Tổng số độc giả</p>
+                            <h3 id="stat-readers-count" class="text-3xl font-bold text-slate-900 mt-1">0</h3>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-xl text-blue-600"><i class="fa-solid fa-user-group text-2xl"></i></div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase">Trạng thái API</p>
+                            <h3 class="text-lg font-bold text-green-600 mt-1">Hoạt động</h3>
+                        </div>
+                        <div class="p-4 bg-emerald-50 rounded-xl text-emerald-600"><i class="fa-solid fa-circle-check text-2xl"></i></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2"><i class="fa-solid fa-bolt text-amber-500"></i> Cấp Phát Phiếu Mượn Nhanh</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <select id="quickReader" class="w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-700"></select>
+                        <select id="quickBook" class="w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-700"></select>
+                        <button onclick="executeBorrow('quick')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-check"></i> Xác Nhận Mượn Sách
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-books" class="tab-content hidden space-y-4">
+                <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <span class="text-gray-500 text-sm font-mono">Đồng bộ trực tiếp dữ liệu xuống tệp data/books.txt</span>
+                    <button onclick="toggleModal('bookModal', true)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-plus"></i> Thêm Đầu Sách Mới
+                    </button>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-6 py-4">Mã Sách</th>
+                            <th class="px-6 py-4">Tên Đầu Sách</th>
+                            <th class="px-6 py-4">Tác Giả</th>
+                            <th class="px-6 py-4">Thể Loại</th>
+                            <th class="px-6 py-4">Tồn Kho</th>
+                            <th class="px-6 py-4">Đơn Giá</th>
+                            <th class="px-6 py-4 text-center">Hành Động</th>
+                        </tr>
+                        </thead>
+                        <tbody id="booksTableBody" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-readers" class="tab-content hidden space-y-4">
+                <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <span class="text-gray-500 text-sm font-mono">Danh sách tài khoản độc giả của hệ thống</span>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-6 py-4">Mã Bạn Đọc</th>
+                            <th class="px-6 py-4">Họ Và Tên</th>
+                            <th class="px-6 py-4">Số Điện Thoại</th>
+                            <th class="px-6 py-4">Phân Hạng Bạn Đọc</th>
+                        </tr>
+                        </thead>
+                        <tbody id="readersTableBody" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-transactions" class="tab-content hidden space-y-4">
+                <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2"><i class="fa-solid fa-right-left text-indigo-500"></i> Quản Lý Giao Dịch Thư Viện</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <select id="mainReader" class="w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-700"></select>
+                        <select id="mainBook" class="w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-700"></select>
+                        <div class="flex gap-2">
+                            <button onclick="executeBorrow('main')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl text-sm">Mượn Sách</button>
+                            <button onclick="executeReturn()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-4 rounded-xl text-sm">Trả Sách Cứng</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div id="bookModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
+        <h3 class="text-lg font-bold text-gray-900">Thêm Sách Vào Kho File Cứng</h3>
+        <div class="space-y-3">
+            <input id="bookId" type="text" placeholder="Mã Sách (Ví dụ: B006)" class="w-full px-4 py-2.5 border rounded-xl bg-gray-50">
+            <input id="bookTitle" type="text" placeholder="Tên Đầu Sách" class="w-full px-4 py-2.5 border rounded-xl bg-gray-50">
+            <input id="bookAuthor" type="text" placeholder="Tác Giả" class="w-full px-4 py-2.5 border rounded-xl bg-gray-50">
+            <input id="bookCategory" type="text" placeholder="Thể Loại" class="w-full px-4 py-2.5 border rounded-xl bg-gray-50">
+            <input id="bookQuantity" type="number" placeholder="Số Lượng Nhập" class="w-full px-4 py-2.5 border rounded-xl bg-gray-50">
+            <input id="bookPrice" type="number" placeholder="Đơn Giá Sách (đ)" class="w-full px-4 py-2.5 border rounded-xl bg-gray-50">
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+            <button onclick="toggleModal('bookModal', false)" class="px-4 py-2 bg-gray-200 rounded-xl text-sm text-gray-700">Hủy</button>
+            <button onclick="submitNewBook()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm hover:bg-indigo-700">Lưu Dữ Liệu</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = "http://localhost:8080/api/v1";
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+        document.getElementById(`btn-${tabName}`).classList.add('active');
+
+        const titles = {
+            'dashboard': 'Bảng Điều Khiển Tổng Quan',
+            'books': 'Quản Lý Danh Mục Kho Sách',
+            'readers': 'Danh Sách Quản Lý Bạn Đọc',
+            'transactions': 'Quản Lý Giao Dịch Mượn - Trả Sách'
+        };
+        document.getElementById('page-title').innerText = titles[tabName];
+    }
+
+    function toggleModal(modalId, isShow) {
+        const modal = document.getElementById(modalId);
+        if(isShow) modal.classList.remove('hidden');
+        else modal.classList.add('hidden');
+    }
+
+    async function loadBooks() {
+        try {
+            const res = await fetch(`${API_URL}/books`);
+            const books = await res.json();
+            document.getElementById('stat-books-count').innerText = books.length;
+
+            const tableBody = document.getElementById('booksTableBody');
+            const quickSelect = document.getElementById('quickBook');
+            const mainSelect = document.getElementById('mainBook');
+
+            tableBody.innerHTML = '';
+            quickSelect.innerHTML = '<option value="">-- Chọn cuốn sách cần mượn --</option>';
+            mainSelect.innerHTML = '<option value="">-- Chọn cuốn sách cần mượn --</option>';
+
+            books.forEach(b => {
+                tableBody.innerHTML += `
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 font-bold text-gray-900">${b.bookId}</td>
+                            <td class="px-6 py-4 font-semibold text-gray-800">${b.title}</td>
+                            <td class="px-6 py-4 text-gray-600">${b.author || 'N/A'}</td>
+                            <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-700">${b.category || 'Giao trình'}</span></td>
+                            <td class="px-6 py-4 font-bold ${b.quantity > 0 ? 'text-green-600':'text-red-500'}">${b.quantity} cuốn</td>
+                            <td class="px-6 py-4 font-medium text-gray-900">${Number(b.price || 0).toLocaleString()}đ</td>
+                            <td class="px-6 py-4 text-center">
+                                <button onclick="deleteBook('${b.bookId}')" class="text-red-600 hover:text-red-900 font-semibold"><i class="fa-solid fa-trash"></i> Xóa</button>
+                            </td>
+                        </tr>
+                    `;
+                if (b.quantity > 0) {
+                    const opt = `<option value="${b.bookId}">${b.title} (Còn: ${b.quantity})</option>`;
+                    quickSelect.innerHTML += opt;
+                    mainSelect.innerHTML += opt;
+                }
+            });
+        } catch (err) { console.error(err); }
+    }
+
+    async function loadReaders() {
+        try {
+            const res = await fetch(`${API_URL}/readers`);
+            const readers = await res.json();
+            document.getElementById('stat-readers-count').innerText = readers.length;
+
+            const tableBody = document.getElementById('readersTableBody');
+            const quickSelect = document.getElementById('quickReader');
+            const mainSelect = document.getElementById('mainReader');
+
+            tableBody.innerHTML = '';
+            quickSelect.innerHTML = '<option value="">-- Chọn Độc giả thực hiện --</option>';
+            mainSelect.innerHTML = '<option value="">-- Chọn Độc giả thực hiện --</option>';
+
+            readers.forEach(r => {
+                tableBody.innerHTML += `
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 font-bold text-gray-900">${r.readerId}</td>
+                            <td class="px-6 py-4 font-semibold text-gray-800">${r.fullName}</td>
+                            <td class="px-6 py-4 text-gray-600">${r.phoneNumber || 'N/A'}</td>
+                            <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs font-bold rounded-full bg-blue-50 text-blue-700">${r.type}</span></td>
+                        </tr>
+                    `;
+                const opt = `<option value="${r.readerId}">${r.fullName} [${r.type}]</option>`;
+                quickSelect.innerHTML += opt;
+                mainSelect.innerHTML += opt;
+            });
+        } catch (err) { console.error(err); }
+    }
+
+    async function executeBorrow(prefix) {
+        const readerId = document.getElementById(`${prefix}Reader`).value;
+        const bookId = document.getElementById(`${prefix}Book`).value;
+        if(!readerId || !bookId) { alert("⚠️ Vui lòng điền đủ thông tin!"); return; }
+
+        try {
+            const res = await fetch(`${API_URL}/borrow`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ readerId, bookId })
+            });
+            const data = await res.json();
+            alert(data.message || "Giao dịch mượn sách đã được xử lý thành công!");
+            loadBooks();
+            loadReaders();
+        } catch (err) { alert("Lỗi kết nối API!"); }
+    }
+
+    async function executeReturn() {
+        const bookId = document.getElementById('mainBook').value;
+        if(!bookId) { alert("⚠️ Vui lòng chọn cuốn sách cần hoàn trả!"); return; }
+
+        try {
+            const res = await fetch(`${API_URL}/return`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ bookId })
+            });
+            const data = await res.json();
+            alert(data.message || "Hệ thống đã ghi nhận hoàn trả sách!");
+            loadBooks();
+            loadReaders();
+        } catch (err) { alert("Lỗi khi gửi lệnh trả sách!"); }
+    }
+
+    async function submitNewBook() {
+        const payload = {
+            bookId: document.getElementById('bookId').value,
+            title: document.getElementById('bookTitle').value,
+            author: document.getElementById('bookAuthor').value,
+            category: document.getElementById('bookCategory').value,
+            quantity: parseInt(document.getElementById('bookQuantity').value) || 0,
+            price: parseFloat(document.getElementById('bookPrice').value) || 0
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/books`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            //  ĐÃ SỬA: Chỉ báo thành công và xóa trắng Form khi phản hồi từ Backend thực sự tốt (res.ok)
+            if (res.ok) {
+                alert(data.message || " Thêm sách mới thành công và đã đồng bộ file cứng!");
+                toggleModal('bookModal', false);
+
+                // Xóa dữ liệu cũ trên Form để chuẩn bị cho lần nhập kế tiếp
+                document.getElementById('bookId').value = '';
+                document.getElementById('bookTitle').value = '';
+                document.getElementById('bookAuthor').value = '';
+                document.getElementById('bookCategory').value = '';
+                document.getElementById('bookQuantity').value = '';
+                document.getElementById('bookPrice').value = '';
+
+                loadBooks();
+            } else {
+                // Hiển thị chính xác nội dung lỗi phản hồi thực tế từ hệ thống Backend
+                alert("Không thể lưu sách: " + (data.message || "Lỗi xử lý hệ thống!"));
+            }
+        } catch (err) { alert("Lỗi kết nối: Không thể gửi yêu cầu đến Backend Server!"); }
+    }
+
+    async function deleteBook(id) {
+        if(!confirm(`Xác nhận xóa vĩnh viễn đầu sách ${id} khỏi file cứng?`)) return;
+        try {
+            const res = await fetch(`${API_URL}/books/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            alert(data.message || "Đầu sách đã được gỡ bỏ!");
+            loadBooks();
+        } catch (err) { alert("Lỗi thực thi lệnh xóa!"); }
+    }
+
+    window.onload = () => {
+        loadBooks();
+        loadReaders();
+    };
+</script>
+</body>
+</html>

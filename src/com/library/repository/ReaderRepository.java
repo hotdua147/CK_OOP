@@ -1,4 +1,5 @@
 package com.library.repository;
+import org.springframework.stereotype.Repository;
 
 import com.library.model.Reader;
 import com.library.model.StudentReader;
@@ -9,6 +10,8 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+@Repository
 
 /**
  * Tầng quản lý lưu trữ dữ liệu Độc giả (Bạn đọc) - Đọc ghi file văn bản 'data/readers.txt'

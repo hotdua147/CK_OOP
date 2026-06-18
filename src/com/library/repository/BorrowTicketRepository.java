@@ -1,5 +1,5 @@
 package com.library.repository;
-
+import org.springframework.stereotype.Repository;
 import com.library.model.BorrowTicket;
 import com.library.model.BorrowTicketDetail;
 import java.io.*;
@@ -7,6 +7,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+@Repository
 
 /**
  * Tầng quản lý lưu trữ dữ liệu Phiếu mượn - Đọc ghi dữ liệu file text 'data/tickets.txt'

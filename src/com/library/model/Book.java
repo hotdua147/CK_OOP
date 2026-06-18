@@ -2,7 +2,7 @@ package com.library.model;
 
 /**
  * Lớp đại diện cho thực thể Sách trong thư viện.
- * ĐÃ CẬP NHẬT ĐẦY ĐỦ 6 THUỘC TÍNH để tương thích với BookRepository mới.
+ * ĐÃ CẬP NHẬT ĐẦY ĐỦ 6 THUỘC TÍNH - Chuẩn hóa kết nối đồng bộ Spring Boot Web API & Jackson.
  */
 public class Book {
     private String bookId;
@@ -13,7 +13,14 @@ public class Book {
     private double price; // Giá trị sách (dùng đối chiếu tính phạt nếu làm mất)
 
     /**
-     * Constructor đầy đủ 6 thuộc tính dùng để nạp dữ liệu từ file text mới.
+     *  1. CONSTRUCTOR MẶC ĐỊNH KHÔNG THAM SỐ (BẮT BUỘC PHẢI CÓ)
+     * Giúp Spring Boot (Jackson) tự động ánh xạ dữ liệu JSON từ giao diện Web thành đối tượng Java mượt mà.
+     */
+    public Book() {
+    }
+
+    /**
+     * 2. Constructor đầy đủ 6 thuộc tính dùng để nạp dữ liệu từ file text mới.
      */
     public Book(String bookId, String title, String author, String category, int quantity, double price) {
         this.bookId = bookId != null ? bookId.trim() : "";
@@ -25,20 +32,20 @@ public class Book {
     }
 
     /**
-     * Constructor rút gọn 3 thuộc tính (Đảm bảo tương thích ngược với dữ liệu cũ).
+     * 3. Constructor rút gọn 3 thuộc tính (Đảm bảo tương thích ngược với dữ liệu cũ).
      */
     public Book(String bookId, String title, int quantity) {
         this(bookId, title, "Chưa rõ", "Giáo trình", quantity, 50000.0);
     }
 
-    // ─── Getters & Setters (Cung cấp đầy đủ các method mà BookRepository yêu cầu) ───
+    // ─── HỆ THỐNG GETTER & SETTER ĐỒNG BỘ ───────────────────────────────────
 
     public String getBookId() {
         return bookId;
     }
 
     public void setBookId(String bookId) {
-        this.bookId = bookId;
+        this.bookId = bookId != null ? bookId.trim() : "";
     }
 
     public String getTitle() {
@@ -46,23 +53,23 @@ public class Book {
     }
 
     public void setTitle(String title) {
-        this.title = title;
+        this.title = title != null ? title.trim() : "";
     }
 
     public String getAuthor() {
-        return author; // Giải quyết lỗi Cannot resolve method 'getAuthor'
+        return author;
     }
 
     public void setAuthor(String author) {
-        this.author = author;
+        this.author = author != null ? author.trim() : "Chưa rõ";
     }
 
     public String getCategory() {
-        return category; // Giải quyết lỗi Cannot resolve method 'getCategory'
+        return category;
     }
 
     public void setCategory(String category) {
-        this.category = category;
+        this.category = category != null ? category.trim() : "Giáo trình";
     }
 
     public int getQuantity() {
@@ -75,7 +82,7 @@ public class Book {
     }
 
     public double getPrice() {
-        return price; // Giải quyết lỗi Cannot resolve method 'getPrice'
+        return price;
     }
 
     public void setPrice(double price) {
@@ -83,11 +90,10 @@ public class Book {
         this.price = Math.max(0.0, price);
     }
 
-    // ─── Cơ chế hiển thị dữ liệu dạng chuỗi ───────────────────────────────────
-
+    // ─── Cơ cơ chế hiển thị dữ liệu dạng chuỗi ────────────────────────────────
     @Override
     public String toString() {
-        return String.format("Book[Mã='%s', Tên='%s', Tác giả='%s', Thể loại='%s', Tồn kho=%d, Giá trị=%,.0fđ]",
+        return String.format("Mã sách: %s | Tên sách: %s | Tác giả: %s | Thể loại: %s | Tồn kho: %d | Giá: %.0fđ",
                 bookId, title, author, category, quantity, price);
     }
 }

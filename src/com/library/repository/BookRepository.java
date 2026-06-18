@@ -1,11 +1,13 @@
 package com.library.repository;
 
+import org.springframework.stereotype.Repository;
 import com.library.model.Book;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+@Repository
 /**
  * Tầng quản lý lưu trữ dữ liệu Sách - Đọc ghi file văn bản 'data/books.txt'
  * NÂNG CẤP: Quản lý đầy đủ cấu trúc dữ liệu 6 thuộc tính theo yêu cầu đề bài lớn.
@@ -24,8 +26,6 @@ public class BookRepository {
     /**
      * Lấy danh sách toàn bộ sách hiện có trên bộ nhớ RAM dưới dạng chỉ đọc.
      * Áp dụng tính năng Defensive Copy để bảo vệ cấu trúc danh sách gốc.
-     *
-     * @return Danh sách Sách không thể sửa đổi cấu trúc từ bên ngoài.
      */
     public List<Book> getAll() {
         return Collections.unmodifiableList(books);
@@ -33,9 +33,6 @@ public class BookRepository {
 
     /**
      * Tìm kiếm một cuốn sách cụ thể dựa trên Mã sách (Không phân biệt chữ hoa, chữ thường).
-     *
-     * @param bookId Mã cuốn sách cần tìm
-     * @return Đối tượng Book nếu tìm thấy, ngược lại trả về null
      */
     public Book findById(String bookId) {
         if (bookId == null) return null;
@@ -49,9 +46,27 @@ public class BookRepository {
     }
 
     /**
+     * THÊM MỚI: Thêm đầu sách mới vào danh sách RAM và đồng bộ xuống file text cứng
+     */
+    public void addBook(Book book) {
+        if (book != null) {
+            books.add(book);
+            saveToFile(); // Tự động đồng bộ ghi đè xuống file books.txt
+        }
+    }
+
+    /**
+     * THÊM MỚI: Xóa vĩnh viễn đầu sách khỏi bộ nhớ RAM và đồng bộ lại file text
+     */
+    public void deleteBook(String bookId) {
+        if (bookId != null) {
+            books.removeIf(b -> b.getBookId().equalsIgnoreCase(bookId.trim()));
+            saveToFile(); // Ghi lại file văn bản mới sau khi đã xóa phần tử
+        }
+    }
+
+    /**
      * Cập nhật thông tin một cuốn sách trên bộ nhớ RAM và tự động đồng bộ xuống file text cứng.
-     *
-     * @param updatedBook Đối tượng sách mang thông tin mới cần cập nhật
      */
     public void update(Book updatedBook) {
         if (updatedBook == null) return;
@@ -71,7 +86,6 @@ public class BookRepository {
         books.clear();
         File file = new File(FILE_PATH);
 
-        // Nếu file không tồn tại, tiến hành sinh dữ liệu mẫu ban đầu để chạy ứng dụng
         if (!file.exists()) {
             initMockData();
             return;
@@ -81,12 +95,10 @@ public class BookRepository {
             String line;
             while ((line = br.readLine()) != null) {
                 line = line.trim();
-                // Bỏ qua dòng trống hoặc dòng ghi chú (comment) bắt đầu bằng ký tự #
                 if (line.isEmpty() || line.startsWith("#")) continue;
 
                 try {
                     String[] parts = line.split("\\|");
-                    // Trường hợp 1: Dữ liệu chuẩn hóa mới đầy đủ 6 cột
                     if (parts.length >= 6) {
                         String id = parts[0].trim();
                         String title = parts[1].trim();
@@ -97,7 +109,6 @@ public class BookRepository {
 
                         books.add(new Book(id, title, author, category, quantity, price));
                     }
-                    // Trường hợp 2: Tương thích ngược với file mẫu cũ chỉ chứa 3 cột
                     else if (parts.length == 3) {
                         String id = parts[0].trim();
                         String title = parts[1].trim();
@@ -124,12 +135,10 @@ public class BookRepository {
         }
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
-            // Ghi dòng tiêu đề cấu trúc hướng dẫn cho file văn bản
             bw.write("# MãSách|TênSách|TácGiả|ThểLoại|SốLượng|GiáTrị");
             bw.newLine();
 
             for (Book b : books) {
-                // Sử dụng định dạng %.0f để hiển thị giá tiền gọn gàng không dính đuôi thập phân .0
                 bw.write(String.format("%s|%s|%s|%s|%d|%.0f",
                         b.getBookId(), b.getTitle(), b.getAuthor(), b.getCategory(), b.getQuantity(), b.getPrice()));
                 bw.newLine();
@@ -148,6 +157,6 @@ public class BookRepository {
         books.add(new Book("B003", "Thiet ke huong doi tuong OOP", "Le Thi C", "Tham khao", 12, 75000.0));
         books.add(new Book("B004", "Co so du lieu va SQL", "Phan Van D", "Giao trinh", 5, 55000.0));
         books.add(new Book("B005", "Phan tich va Thiet ke he thong", "Hoang Ngoc E", "Tham khao", 20, 90000.0));
-        saveToFile(); // Lưu ngay xuống file
+        saveToFile();
     }
 }

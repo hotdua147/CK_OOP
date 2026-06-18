@@ -3,6 +3,9 @@ package com.library.service;
 import com.library.model.Reader;
 import com.library.repository.ReaderRepository;
 import java.util.List;
+import org.springframework.stereotype.Service;
+
+@Service
 
 /**
  * Tầng xử lý logic nghiệp vụ liên quan đến Độc giả (Bạn đọc).
