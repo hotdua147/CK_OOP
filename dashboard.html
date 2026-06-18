@@ -82,17 +82,33 @@
                 </div>
 
                 <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2"><i class="fa-solid fa-bolt text-amber-500"></i> Cấp Phát Phiếu Mượn Nhanh</h3>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-amber-500"></i> Cấp Phát Phiếu Mượn Nhanh
+                    </h3>
+
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <select id="quickReader" class="w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-700"></select>
-                        <select id="quickBook" class="w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-700"></select>
-                        <button onclick="executeBorrow('quick')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-check"></i> Xác Nhận Mượn Sách
-                        </button>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Chọn độc giả:</label>
+                            <select id="quickReader" class="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-700 focus:ring-2 focus:ring-indigo-500">
+                                <option value="">-- Chọn độc giả --</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Chọn sách:</label>
+                            <select id="quickBook" class="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-700 focus:ring-2 focus:ring-indigo-500">
+                                <option value="">-- Chọn sách --</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-end">
+                            <button onclick="executeQuickBorrow()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-check"></i> Xác Nhận Mượn
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-
             <div id="tab-books" class="tab-content hidden space-y-4">
                 <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                     <span class="text-gray-500 text-sm font-mono">Đồng bộ trực tiếp dữ liệu xuống tệp data/books.txt</span>
@@ -117,6 +133,7 @@
                     </table>
                 </div>
             </div>
+
 
             <div id="tab-readers" class="tab-content hidden space-y-4">
                 <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
@@ -172,6 +189,26 @@
     </div>
 </div>
 
+<button onclick="document.getElementById('addModal').classList.remove('hidden')"
+        class="bg-indigo-600 text-white px-4 py-2 rounded-lg mb-4 hover:bg-indigo-700 font-semibold shadow-md">
+    <i class="fa-solid fa-plus mr-2"></i>Thêm độc giả mới
+</button>
+
+<div id="addModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg w-96 shadow-xl">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Thêm độc giả mới</h2>
+        <div class="space-y-3">
+            <input type="text" id="newUserId" placeholder="Mã độc giả (VD: BD001)" class="w-full border p-2 rounded">
+            <input type="text" id="newFullName" placeholder="Họ và tên" class="w-full border p-2 rounded">
+            <input type="text" id="newPhone" placeholder="Số điện thoại" class="w-full border p-2 rounded">
+        </div>
+        <div class="flex justify-end gap-2 mt-6">
+            <button onclick="document.getElementById('addModal').classList.add('hidden')" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Hủy</button>
+            <button onclick="addReader()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Lưu</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const API_URL = "http://localhost:8080/api/v1";
 
@@ -199,86 +236,121 @@
     async function loadBooks() {
         try {
             const res = await fetch(`${API_URL}/books`);
+            if (!res.ok) throw new Error("Không thể tải dữ liệu sách");
             const books = await res.json();
+
             document.getElementById('stat-books-count').innerText = books.length;
 
             const tableBody = document.getElementById('booksTableBody');
             const quickSelect = document.getElementById('quickBook');
             const mainSelect = document.getElementById('mainBook');
 
-            tableBody.innerHTML = '';
-            quickSelect.innerHTML = '<option value="">-- Chọn cuốn sách cần mượn --</option>';
-            mainSelect.innerHTML = '<option value="">-- Chọn cuốn sách cần mượn --</option>';
+            // Render bảng dữ liệu
+            tableBody.innerHTML = books.map(b => `
+            <tr class="hover:bg-gray-50 transition-colors border-b">
+                <td class="px-6 py-4 font-bold text-gray-900">${b.bookId}</td>
+                <td class="px-6 py-4 font-semibold text-gray-800">${b.title}</td>
+                <td class="px-6 py-4 text-gray-600">${b.author || 'N/A'}</td>
+                <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-700">${b.category || 'Giáo trình'}</span></td>
+                <td class="px-6 py-4 font-bold ${b.quantity > 0 ? 'text-green-600':'text-red-500'}">${b.quantity} cuốn</td>
+                <td class="px-6 py-4 font-medium text-gray-900">${Number(b.price || 0).toLocaleString()}đ</td>
+                <td class="px-6 py-4 text-center">
+                    <button onclick="deleteBook('${b.bookId}')" class="text-red-600 hover:text-red-900 font-semibold text-sm">
+                        <i class="fa-solid fa-trash"></i> Xóa
+                    </button>
+                </td>
+            </tr>
+        `).join('');
 
-            books.forEach(b => {
-                tableBody.innerHTML += `
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 font-bold text-gray-900">${b.bookId}</td>
-                            <td class="px-6 py-4 font-semibold text-gray-800">${b.title}</td>
-                            <td class="px-6 py-4 text-gray-600">${b.author || 'N/A'}</td>
-                            <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-700">${b.category || 'Giao trình'}</span></td>
-                            <td class="px-6 py-4 font-bold ${b.quantity > 0 ? 'text-green-600':'text-red-500'}">${b.quantity} cuốn</td>
-                            <td class="px-6 py-4 font-medium text-gray-900">${Number(b.price || 0).toLocaleString()}đ</td>
-                            <td class="px-6 py-4 text-center">
-                                <button onclick="deleteBook('${b.bookId}')" class="text-red-600 hover:text-red-900 font-semibold"><i class="fa-solid fa-trash"></i> Xóa</button>
-                            </td>
-                        </tr>
-                    `;
-                if (b.quantity > 0) {
-                    const opt = `<option value="${b.bookId}">${b.title} (Còn: ${b.quantity})</option>`;
-                    quickSelect.innerHTML += opt;
-                    mainSelect.innerHTML += opt;
-                }
-            });
-        } catch (err) { console.error(err); }
+            // Render lại dropdown
+            const optionsHTML = '<option value="">-- Chọn cuốn sách cần mượn --</option>' +
+                books.filter(b => b.quantity > 0)
+                    .map(b => `<option value="${b.bookId}">${b.title} (Còn: ${b.quantity})</option>`)
+                    .join('');
+
+            quickSelect.innerHTML = optionsHTML;
+            mainSelect.innerHTML = optionsHTML;
+
+        } catch (err) { console.error("Lỗi loadBooks:", err); }
     }
 
     async function loadReaders() {
         try {
             const res = await fetch(`${API_URL}/readers`);
+            if (!res.ok) throw new Error("Không thể tải dữ liệu độc giả");
+
             const readers = await res.json();
+
+            // --- CHÈN DÒNG NÀY VÀO ---
+            console.log("Dữ liệu thô từ API:", readers);
+            // -------------------------
+
             document.getElementById('stat-readers-count').innerText = readers.length;
-
             const tableBody = document.getElementById('readersTableBody');
-            const quickSelect = document.getElementById('quickReader');
-            const mainSelect = document.getElementById('mainReader');
 
-            tableBody.innerHTML = '';
-            quickSelect.innerHTML = '<option value="">-- Chọn Độc giả thực hiện --</option>';
-            mainSelect.innerHTML = '<option value="">-- Chọn Độc giả thực hiện --</option>';
+            tableBody.innerHTML = readers.map(r => `
+        <tr class="hover:bg-gray-50 transition-colors border-b">
+            <td class="px-6 py-4 font-bold text-gray-900">${r.userId || 'N/A'}</td>
+            <td class="px-6 py-4 font-semibold text-gray-800">${r.fullName || 'N/A'}</td>
+            <td class="px-6 py-4 text-gray-600">${r.phoneNumber || 'N/A'}</td>
+            <td class="px-6 py-4">
+                <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-blue-50 text-blue-700">
+                    ${r.readerType || 'Độc giả'}
+                </span>
+            </td>
+            <td class="px-6 py-4 text-center">
+                <button onclick="deleteReader('${r.userId}')" class="text-red-600 hover:text-red-900 font-semibold text-sm">
+                    <i class="fa-solid fa-trash"></i> Xóa
+                </button>
+            </td>
+        </tr>
+        `).join('');
 
-            readers.forEach(r => {
-                tableBody.innerHTML += `
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 font-bold text-gray-900">${r.readerId}</td>
-                            <td class="px-6 py-4 font-semibold text-gray-800">${r.fullName}</td>
-                            <td class="px-6 py-4 text-gray-600">${r.phoneNumber || 'N/A'}</td>
-                            <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs font-bold rounded-full bg-blue-50 text-blue-700">${r.type}</span></td>
-                        </tr>
-                    `;
-                const opt = `<option value="${r.readerId}">${r.fullName} [${r.type}]</option>`;
-                quickSelect.innerHTML += opt;
-                mainSelect.innerHTML += opt;
-            });
-        } catch (err) { console.error(err); }
+        } catch (err) {
+            console.error("Lỗi loadReaders:", err);
+        }
     }
 
     async function executeBorrow(prefix) {
-        const readerId = document.getElementById(`${prefix}Reader`).value;
-        const bookId = document.getElementById(`${prefix}Book`).value;
-        if(!readerId || !bookId) { alert("⚠️ Vui lòng điền đủ thông tin!"); return; }
+        // 1. Lấy giá trị từ các ô chọn dựa trên prefix
+        // Thêm dấu ? để tránh lỗi nếu ID không tồn tại
+        const readerId = document.getElementById(`${prefix}Reader`)?.value;
+        const bookId = document.getElementById(`${prefix}Book`)?.value;
+
+        if (!readerId || !bookId) {
+            alert("⚠ Vui lòng điền đủ thông tin độc giả và sách!");
+            return;
+        }
+
+        console.log(`Đang xử lý mượn sách. Reader: ${readerId}, Book: ${bookId}`);
 
         try {
-            const res = await fetch(`${API_URL}/borrow`, {
+            // 2. Gọi API (Đảm bảo URL khớp với @PostMapping trong Controller)
+            const res = await fetch(`${API_URL}/transactions/borrow`, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ readerId, bookId })
             });
+
+            // 3. Xử lý phản hồi từ Server
             const data = await res.json();
-            alert(data.message || "Giao dịch mượn sách đã được xử lý thành công!");
-            loadBooks();
-            loadReaders();
-        } catch (err) { alert("Lỗi kết nối API!"); }
+
+            if (res.ok) {
+                // Trường hợp thành công (HTTP 200)
+                alert("" + (data.message || "Giao dịch mượn sách thành công!"));
+
+                // Cập nhật lại giao diện
+                loadBooks();
+                loadReaders();
+            } else {
+                // Trường hợp Server báo lỗi (Ví dụ: sách đã hết, độc giả nợ phí)
+                alert(" Lỗi từ Server: " + (data.message || "Không thể mượn sách"));
+            }
+
+        } catch (err) {
+            console.error("Lỗi kết nối:", err);
+            alert("⚠ Không thể kết nối tới Server. Vui lòng kiểm tra lại Backend!");
+        }
     }
 
     async function executeReturn() {
@@ -347,10 +419,205 @@
         } catch (err) { alert("Lỗi thực thi lệnh xóa!"); }
     }
 
-    window.onload = () => {
-        loadBooks();
+    async function addReader() {
+        const reader = {
+            userId: document.getElementById('newUserId').value,
+            fullName: document.getElementById('newFullName').value,
+            phoneNumber: document.getElementById('newPhone').value
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/readers`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(reader)
+            });
+
+            if (res.ok) {
+                alert("Thêm thành công!");
+                document.getElementById('addModal').classList.add('hidden'); // Đóng modal
+                loadReaders(); // Refresh bảng
+            } else {
+                const err = await res.json();
+                alert("Lỗi: " + (err.message || "Không thể thêm"));
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function deleteReader(id) {
+        if (!confirm(`Bạn có chắc chắn muốn xóa độc giả ${id} vĩnh viễn?`)) return;
+
+        try {
+            const res = await fetch(`${API_URL}/readers/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            // Kiểm tra loại nội dung phản hồi trước khi parse JSON
+            const contentType = res.headers.get("content-type");
+            let data = { message: "Đã xóa thành công!" }; // Mặc định
+
+            if (contentType && contentType.includes("application/json")) {
+                data = await res.json();
+            }
+
+            if (res.ok) {
+                alert(data.message || "Xóa thành công!");
+                loadReaders(); // Tải lại bảng để cập nhật giao diện
+            } else {
+                // Lấy lỗi từ server nếu có, không thì lấy text phản hồi
+                alert("Lỗi: " + (data.message || res.statusText || "Không thể xóa độc giả này"));
+            }
+        } catch (err) {
+            console.error("Lỗi xóa:", err);
+            alert("Lỗi kết nối server! Vui lòng kiểm tra lại backend.");
+        }
+    }
+
+    async function executeQuickBorrow() {
+        const readerElement = document.getElementById('quickReader');
+        const bookElement = document.getElementById('quickBook');
+
+        // Kiểm tra xem thẻ có tồn tại không
+        if (!readerElement || !bookElement) {
+            console.error("LỖI: Không tìm thấy thẻ select (Kiểm tra lại ID trong HTML)");
+            return;
+        }
+
+        const readerId = readerElement.value;
+        const bookId = bookElement.value;
+
+        // "Mắt thần" ở đây
+        console.log("Giá trị Reader ID:", readerId);
+        console.log("Giá trị Book ID:", bookId);
+
+        if (!readerId || !bookId) {
+            alert("⚠️ Vui lòng chọn Độc giả và Sách!");
+            return;
+        }
+
+        sendBorrowRequest(readerId, bookId);
+    }
+
+    // Hàm này là "trái tim" để gửi dữ liệu lên Server
+    async function sendBorrowRequest(readerId, bookId) {
+        try {
+            const res = await fetch(`${API_URL}/borrow`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ readerId: readerId, bookId: bookId })
+            });
+
+            // Kiểm tra xem server phản hồi như thế nào
+            if (res.ok) {
+                const data = await res.json();
+                alert("" + (data.message || "Mượn sách thành công!"));
+
+                // Tải lại dữ liệu để bảng cập nhật tồn kho
+                loadBooks();
+                loadReaders();
+            } else {
+                const errData = await res.json();
+                alert(" Lỗi: " + (errData.message || "Không thể mượn sách"));
+            }
+        } catch (err) {
+            console.error("Lỗi kết nối:", err);
+            alert("⚠️ Không thể kết nối tới Server!");
+        }
+    }
+
+
+    // --- Khu vực Cấp Phát Nhanh ---
+    async function populateQuickBookSelect() {
+        try {
+            const res = await fetch(`${API_URL}/books`);
+            const books = await res.json();
+            const select = document.getElementById('quickBook'); // ID khớp với khu vực Quick
+
+            select.innerHTML = '<option value="">-- Chọn sách --</option>';
+            // Chỉ hiện sách còn tồn kho
+            books.filter(b => b.quantity > 0).forEach(b => {
+                select.innerHTML += `<option value="${b.bookId}">${b.title} (Còn: ${b.quantity})</option>`;
+            });
+        } catch (err) { console.error("Lỗi nạp sách Quick:", err); }
+    }
+
+    // --- Khu vực Quản Lý Giao Dịch (Main) ---
+    async function populateMainBookSelect() {
+        try {
+            const res = await fetch(`${API_URL}/books`);
+            const books = await res.json();
+            const select = document.getElementById('mainBook'); // ID khớp với khu vực Main
+
+            select.innerHTML = '<option value="">-- Chọn sách --</option>';
+            books.filter(b => b.quantity > 0).forEach(b => {
+                select.innerHTML += `<option value="${b.bookId}">${b.title} (Còn: ${b.quantity})</option>`;
+            });
+        } catch (err) { console.error("Lỗi nạp sách Main:", err); }
+    }
+
+    async function populateQuickReaderSelect() {
+        const select = document.getElementById('quickReader');
+
+        // Kiểm tra xem phần tử có tồn tại không để tránh lỗi "null"
+        if (!select) {
+            console.error("Không tìm thấy thẻ có id='quickReader'");
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/readers`);
+            if (!res.ok) throw new Error("Không thể tải dữ liệu độc giả");
+
+            const readers = await res.json();
+
+            // Dùng biến tạm để tích lũy chuỗi, chỉ thay đổi innerHTML 1 lần duy nhất
+            let optionsHtml = '<option value="">-- Chọn độc giả --</option>';
+
+            readers.forEach(r => {
+                // Đảm bảo r.userId tồn tại
+                const id = r.userId || 'N/A';
+                optionsHtml += `<option value="${id}">${r.fullName} - ${id}</option>`;
+            });
+
+            select.innerHTML = optionsHtml;
+
+        } catch (err) {
+            console.error("Lỗi nạp độc giả vào dropdown:", err);
+            select.innerHTML = '<option value="">Lỗi tải danh sách</option>';
+        }
+    }
+
+    // --- Khu vực Quản Lý Giao Dịch (Main) ---
+    async function populateMainReaderSelect() {
+        const res = await fetch(`${API_URL}/readers`);
+        const readers = await res.json();
+        const select = document.getElementById('mainReader'); // ID khớp với khu vực Main
+        select.innerHTML = '<option value="">-- Chọn độc giả --</option>';
+        readers.forEach(r => {
+            select.innerHTML += `<option value="${r.userId}">${r.fullName} - ${r.userId}</option>`;
+        });
+    }
+
+</script>
+<script>
+    // Hàm này sẽ tự động chạy ngay khi trình duyệt tải xong HTML
+    document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOM đã sẵn sàng, bắt đầu load dữ liệu...");
         loadReaders();
-    };
+        loadBooks();
+        // Nạp dropdown
+        populateQuickBookSelect();
+        populateMainBookSelect();
+        populateQuickReaderSelect();
+        populateMainReaderSelect();
+        executeQuickBorrow();
+        sendBorrowRequest();
+    });
 </script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 package com.library.model;
 
 import com.library.service.policy.FinePolicy; // Import bản chuẩn interface chiến lược phạt
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 /**
  * Lớp trừu tượng (Abstract class) đại diện cho Bạn đọc trong hệ thống thư viện.
  * Kế thừa từ lớp cơ sở User và đóng vai trò cấu hình đa hình cho Strategy Pattern.
@@ -9,6 +9,7 @@ import com.library.service.policy.FinePolicy; // Import bản chuẩn interface 
 public abstract class Reader extends User {
 
     // CẢI TIẾN: Chuyển từ protected sang private để đảm bảo tính đóng gói tuyệt đối
+    @JsonIgnore
     private final FinePolicy finePolicy;
 
     /**

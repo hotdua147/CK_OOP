@@ -75,6 +75,27 @@ public class ReaderService {
     }
 
     /**
+     * Nghiệp vụ xóa một bạn đọc khỏi hệ thống.
+     * Kiểm tra sự tồn tại trước khi xóa để tránh lỗi dữ liệu.
+     */
+    public void deleteReader(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new IllegalArgumentException("Lỗi: Mã bạn đọc cần xóa không được để trống!");
+        }
+
+        // Kiểm tra xem độc giả có tồn tại hay không
+        if (readerRepository.findById(id.trim()) == null) {
+            throw new IllegalArgumentException("Lỗi: Không tìm thấy bạn đọc mã '" + id + "' để xóa!");
+        }
+
+        // Gọi Repository để xóa
+        // LƯU Ý: Kiểm tra file ReaderRepository.java của bạn xem hàm xóa tên là delete() hay remove()
+        readerRepository.delete(id.trim());
+
+        System.out.println("[ReaderService] Đã xóa bạn đọc thành công: " + id);
+    }
+
+    /**
      * Nghiệp vụ cập nhật thông tin chỉnh sửa của một bạn đọc hiện hành.
      */
     public void updateReader(Reader reader) {

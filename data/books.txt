@@ -1,5 +1,6 @@
 # MãSách|TênSách|TácGiả|ThểLoại|SốLượng|GiáTrị
 B001|Lap trinh Java can ban|Nguyen Van A|Giao trinh|14|50000
-B002|Cau truc du lieu va Giai thuat|Tran Van B|Giao trinh|8|60000
+B002|Cau truc du lieu va Giai thuat|Tran Van B|Giao trinh|7|60000
 B003|Thiet ke huong doi tuong OOP|Le Thi C|Tham khao|11|75000
 B005|Phan tich va Thiet ke he thong|Hoang Ngoc E|Tham khao|20|90000
+zxc|zxc|xnxn|jf|50|50000

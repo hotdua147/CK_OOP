@@ -1,7 +1,6 @@
 package com.library.model;
 
 import com.library.service.policy.NormalStudentFinePolicy; // Import chính xác chiến lược tính phạt của Sinh viên thường
-
 /**
  * Lớp thực thể đại diện cho đối tượng độc giả là Sinh viên thường.
  * Kế thừa từ lớp Reader và áp dụng các cấu hình quy định đặc thù:

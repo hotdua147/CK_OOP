@@ -35,7 +35,15 @@ public class ReaderRepository {
      * @return Danh sách Độc giả không thể sửa đổi cấu trúc từ bên ngoài.
      */
     public List<Reader> getAll() {
-        return Collections.unmodifiableList(readers);
+        // THÊM ĐOẠN NÀY ĐỂ DEBUG
+        System.out.println("DEBUG: Repository đang có " + readers.size() + " độc giả.");
+
+        // Nếu size bằng 0, nghĩa là file text của bạn chưa được đọc đúng
+        if (readers.isEmpty()) {
+            System.out.println("CẢNH BÁO: Danh sách độc giả đang rỗng! Kiểm tra lại file đọc dữ liệu.");
+        }
+
+        return new ArrayList<>(readers);
     }
 
     /**
@@ -44,6 +52,23 @@ public class ReaderRepository {
      * @param readerId Mã độc giả cần tìm kiếm (Ví dụ: BD001)
      * @return Đối tượng Reader con tương ứng nếu tìm thấy, ngược lại trả về null
      */
+
+    /**
+     * Xóa độc giả khỏi danh sách và cập nhật lại file dữ liệu cứng.
+     */
+    public void delete(String id) {
+        // 1. Tìm và xóa độc giả khỏi list trong RAM
+        boolean removed = readers.removeIf(r -> r.getUserId().equals(id.trim()));
+
+        // 2. Nếu tìm thấy và xóa thành công, lưu lại file để đồng bộ
+        if (removed) {
+            saveToFile();
+            System.out.println("[ReaderRepository] Đã xóa độc giả: " + id);
+        } else {
+            throw new IllegalArgumentException("Không tìm thấy độc giả có mã: " + id);
+        }
+    }
+
     public Reader findById(String readerId) {
         if (readerId == null) return null;
         String trimmedId = readerId.trim();

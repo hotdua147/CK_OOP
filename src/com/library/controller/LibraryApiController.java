@@ -2,6 +2,8 @@ package com.library.controller;
 
 import com.library.model.Book;
 import com.library.model.Reader;
+import com.library.model.StudentReader;
+import com.library.model.LecturerReader;
 import com.library.service.BookService;
 import com.library.service.ReaderService;
 import com.library.service.BorrowReturnService;
@@ -16,6 +18,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1")
+
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class LibraryApiController {
 
@@ -84,32 +87,60 @@ public class LibraryApiController {
         }
     }
 
-    // ==================== 2. NGHIỆP VỤ QUẢN LÝ BẠN ĐỌC (CRUD) ====================
-
     @GetMapping("/readers")
-    public ResponseEntity<List<Map<String, Object>>> getAllReaders() {
+    public ResponseEntity<List<Reader>> getAllReaders() {
         try {
+            // Đảm bảo ReaderService của bạn đã có hàm getAllReaders()
             List<Reader> readers = readerService.getAllReaders();
-            List<Map<String, Object>> safeReaderList = new ArrayList<>();
-
-            for (Reader r : readers) {
-                Map<String, Object> map = new HashMap<>();
-                map.put("readerId", r.getUserId());
-                map.put("fullName", r.getFullName());
-                map.put("phoneNumber", r.getPhoneNumber());
-                map.put("type", r.getReaderType());
-                safeReaderList.add(map);
-            }
-            return ResponseEntity.ok(safeReaderList);
+            return ResponseEntity.ok(readers);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     @PostMapping("/readers")
-    public ResponseEntity<?> registerNewReader(@RequestBody Map<String, String> payload) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "Đăng ký thành công!"));
+    public ResponseEntity<?> addReader(@RequestBody Map<String, Object> payload) {
+        try {
+            String userId = String.valueOf(payload.getOrDefault("userId", ""));
+            String fullName = String.valueOf(payload.getOrDefault("fullName", ""));
+            String phoneNumber = String.valueOf(payload.getOrDefault("phoneNumber", ""));
+            String readerType = String.valueOf(payload.getOrDefault("readerType", ""));
+
+            Reader newReader;
+
+            // Khởi tạo đối tượng dựa trên loại độc giả
+            if ("Sinh viên".equals(readerType) || "Sinh viên thường".equals(readerType)) {
+                newReader = new StudentReader(userId, fullName, phoneNumber);
+            } else if ("Giảng viên".equals(readerType)) {
+                newReader = new LecturerReader(userId, fullName, phoneNumber);
+            } else {
+                throw new IllegalArgumentException("Loại độc giả không hợp lệ!");
+            }
+
+            // Lưu vào hệ thống
+            readerService.addReader(newReader);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "Thêm độc giả thành công!"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("message", "Lỗi: " + e.getMessage()));
+        }
     }
+
+    // API Xóa độc giả
+    @DeleteMapping("/readers/{id}")
+    public ResponseEntity<?> deleteReader(@PathVariable String id) {
+        try {
+            // Gọi service để xóa (Đảm bảo ReaderService đã có hàm deleteReader)
+            readerService.deleteReader(id);
+            return ResponseEntity.ok(Map.of("message", "Đã xóa độc giả mã " + id + " thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Không thể xóa độc giả này: " + e.getMessage()));
+        }
+    }
+
+
 
     // ==================== 3. NGHIỆP VỤ MƯỢN / TRẢ SÁCH XUYÊN TẦNG ====================
 
