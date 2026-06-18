@@ -1,0 +1,327 @@
+@startuml
+class com.library.exception.DataNotFoundException {
+}
+class com.library.service.ReaderService {
+- ReaderRepository readerRepository
++ List<Reader> getAllReaders()
++ Reader getReaderById(String)
++ void addReader(Reader)
++ void deleteReader(String)
++ void updateReader(Reader)
+- void validateReaderData(String,String)
+}
+
+
+class com.library.utils.ValidationUtils {
+- {static} Pattern PHONE_PATTERN
+- {static} Pattern READER_ID_PATTERN
+- {static} Pattern BOOK_ID_PATTERN
+- {static} Pattern TICKET_ID_PATTERN
++ {static} boolean isEmpty(String)
++ {static} boolean isValidPhone(String)
++ {static} boolean isValidReaderId(String)
++ {static} boolean isValidBookId(String)
++ {static} boolean isValidTicketId(String)
+}
+
+
+class com.library.service.BookService {
+- BookRepository bookRepository
++ List<Book> getAllBooks()
++ Book getBookById(String)
++ void addBook(Book)
++ void deleteBook(String)
++ void updateBookQuantity(String,int)
+}
+
+
+class com.library.exception.BorrowLimitExceededException {
+}
+class com.library.config.SecurityConfig {
++ SecurityFilterChain filterChain(HttpSecurity)
++ CorsConfigurationSource corsConfigurationSource()
+}
+
+interface com.library.service.policy.FinePolicy {
+~ double calculateFine(int)
+}
+
+class com.library.service.policy.LecturerFinePolicy {
+- {static} double FINE_PER_DAY
++ double calculateFine(int)
+}
+
+
+class com.library.service.policy.NormalStudentFinePolicy {
+- {static} double FINE_PER_DAY
++ double calculateFine(int)
+}
+
+
+class com.library.repository.BorrowTicketRepository {
+- {static} String FILE_PATH
+- List<BorrowTicket> tickets
++ List<BorrowTicket> getAll()
++ BorrowTicket findById(String)
++ void add(BorrowTicket)
++ void update(BorrowTicket)
+- void loadFromFile()
+- void saveToFile()
+}
+
+
+class com.library.model.Book {
+- String bookId
+- String title
+- String author
+- String category
+- int quantity
+- double price
++ String getBookId()
++ void setBookId(String)
++ String getTitle()
++ void setTitle(String)
++ String getAuthor()
++ void setAuthor(String)
++ String getCategory()
++ void setCategory(String)
++ int getQuantity()
++ void setQuantity(int)
++ double getPrice()
++ void setPrice(double)
++ String toString()
+}
+
+
+class com.library.utils.InputUtils {
+- {static} Scanner scanner
++ {static} String readString(String)
++ {static} int readInt(String,int,int)
++ {static} int readPositiveInt(String)
+}
+
+
+class com.library.service.BorrowReturnService {
+- BorrowTicketRepository borrowTicketRepository
+- BookRepository bookRepository
+- ReaderRepository readerRepository
++ void borrowBook(String,String,int)
++ void returnBook(String)
+- int countCurrentlyBorrowedBooks(String)
+}
+
+
+class com.library.main.Main {
+- {static} BorrowTicketRepository borrowTicketRepository
+- {static} BookRepository bookRepository
+- {static} ReaderRepository readerRepository
+- {static} BorrowReturnService borrowReturnService
++ {static} void main(String[])
+- {static} void showAllBooks()
+- {static} void searchBookById()
+- {static} void handleBorrowBook()
+- {static} void handleReturnBook()
+- {static} void showAllReaders()
+- {static} void showAllTickets()
+}
+
+
+class com.library.controller.LibraryApiController {
+- BookService bookService
+- ReaderService readerService
+- BorrowReturnService borrowReturnService
++ ResponseEntity<List<Map<String,Object>>> getAllBooks()
++ ResponseEntity<?> addNewBook(Map<String,Object>)
++ ResponseEntity<?> deleteBook(String)
++ ResponseEntity<List<Reader>> getAllReaders()
++ ResponseEntity<?> addReader(Map<String,Object>)
++ ResponseEntity<?> deleteReader(String)
++ ResponseEntity<?> processBorrow(Map<String,String>)
++ ResponseEntity<?> processReturn(Map<String,String>)
+}
+
+
+class com.library.model.StudentReader {
+- {static} int MAX_BORROW_LIMIT
+- {static} int FINE_PER_DAY
+- {static} String READER_TYPE
++ int getMaxBorrowLimit()
++ String getReaderType()
++ int getFinePerDay()
+}
+
+
+class com.library.exception.LibraryException {
+}
+class com.library.exception.OutOfStockException {
+}
+class com.library.LibraryApplication {
++ {static} void main(String[])
+}
+
+class com.library.model.ReturnRecord {
+- String recordId
+- String ticketId
+- LocalDate returnDate
+- double finePaid
++ String getRecordId()
++ void setRecordId(String)
++ String getTicketId()
++ void setTicketId(String)
++ LocalDate getReturnDate()
++ void setReturnDate(LocalDate)
++ double getFinePaid()
++ void setFinePaid(double)
++ String toFileFormat()
++ String toString()
+}
+
+
+class com.library.repository.ReaderRepository {
+- {static} String FILE_PATH
+- List<Reader> readers
++ List<Reader> getAll()
++ void delete(String)
++ Reader findById(String)
++ void add(Reader)
++ void update(Reader)
+- void loadFromFile()
+- Reader parseLine(String)
+- void saveToFile()
+- void initMockData()
+}
+
+
+class com.library.model.BorrowTicket {
+- String ticketId
+- String readerId
+- LocalDate borrowDate
+- LocalDate dueDate
+- LocalDate returnDate
+- TicketStatus status
+- double fineAmount
+- List<BorrowTicketDetail> details
++ String getTicketId()
++ void setTicketId(String)
++ String getReaderId()
++ void setReaderId(String)
++ LocalDate getBorrowDate()
++ void setBorrowDate(LocalDate)
++ LocalDate getDueDate()
++ void setDueDate(LocalDate)
++ LocalDate getReturnDate()
++ void setReturnDate(LocalDate)
++ TicketStatus getStatus()
++ void setStatus(TicketStatus)
++ String getStatusValue()
++ void setStatusByValue(String)
++ double getFineAmount()
++ void setFineAmount(double)
++ List<BorrowTicketDetail> getDetails()
++ void addDetail(BorrowTicketDetail)
++ String toFileFormat()
+}
+
+
+enum com.library.model.TicketStatus {
++  BORROWING
++  RETURNED
+- String value
++ String getValue()
++ {static} TicketStatus fromValue(String)
+}
+
+
+abstract class com.library.model.User {
+- String userId
+- String fullName
+- String phoneNumber
++ String getUserId()
++ void setUserId(String)
++ String getFullName()
++ void setFullName(String)
++ String getPhoneNumber()
++ void setPhoneNumber(String)
++ String toString()
+}
+
+
+abstract class com.library.model.Reader {
+- FinePolicy finePolicy
++ FinePolicy getFinePolicy()
++ {abstract}int getMaxBorrowLimit()
++ {abstract}String getReaderType()
++ {abstract}int getFinePerDay()
++ String toString()
+}
+
+
+class com.library.repository.BookRepository {
+- {static} String FILE_PATH
+- List<Book> books
++ List<Book> getAll()
++ Book findById(String)
++ void addBook(Book)
++ void deleteBook(String)
++ void update(Book)
+- void loadFromFile()
+- void saveToFile()
+- void initMockData()
+}
+
+
+class com.library.service.policy.PriorityStudentFinePolicy {
+- {static} double FINE_PER_DAY
++ double calculateFine(int)
+}
+
+
+class com.library.model.BorrowTicketDetail {
+- String bookId
+- int quantity
++ String getBookId()
++ int getQuantity()
++ String toString()
++ boolean equals(Object)
++ int hashCode()
+}
+
+
+class com.library.model.PriorityStudentReader {
+- {static} int MAX_BORROW_LIMIT
+- {static} int FINE_PER_DAY
+- {static} String READER_TYPE
++ int getMaxBorrowLimit()
++ String getReaderType()
++ int getFinePerDay()
+}
+
+
+class com.library.model.LecturerReader {
+- {static} int MAX_BORROW_LIMIT
+- {static} int FINE_PER_DAY
+- {static} String READER_TYPE
++ int getMaxBorrowLimit()
++ String getReaderType()
++ int getFinePerDay()
+}
+
+
+class com.library.utils.IdGenerator {
++ {static} String generateTicketId(List<BorrowTicket>)
+}
+
+
+
+com.library.exception.LibraryException <|-- com.library.exception.DataNotFoundException
+com.library.exception.LibraryException <|-- com.library.exception.BorrowLimitExceededException
+com.library.service.policy.FinePolicy <|.. com.library.service.policy.LecturerFinePolicy
+com.library.service.policy.FinePolicy <|.. com.library.service.policy.NormalStudentFinePolicy
+com.library.model.Reader <|-- com.library.model.StudentReader
+com.library.exception.Exception <|-- com.library.exception.LibraryException
+com.library.exception.LibraryException <|-- com.library.exception.OutOfStockException
+com.library.model.User <|-- com.library.model.Reader
+com.library.service.policy.FinePolicy <|.. com.library.service.policy.PriorityStudentFinePolicy
+com.library.model.Reader <|-- com.library.model.PriorityStudentReader
+com.library.model.Reader <|-- com.library.model.LecturerReader
+@enduml
