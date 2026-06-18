@@ -1,1 +1,30 @@
-out/
+/target/
+/out/
+# --- IntelliJ IDEA ---
+.idea/
+*.iml
+*.iws
+
+# --- Maven ---
+target/
+.mvn/
+
+# --- OS Files (File rác hệ thống) ---
+.DS_Store
+Thumbs.db
+
+# --- Logs & Temp ---
+*.log
+*.tmp
+logs/
+temp/
+
+# --- Eclipse Files (Nếu sau này bạn mở bằng Eclipse) ---
+.settings/
+.project
+.classpath
+bin/
+
+# --- File bảo mật/Môi trường (Tùy chọn) ---
+*.env
+.env
